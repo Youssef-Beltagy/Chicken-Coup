@@ -2,18 +2,11 @@
 
 Team Name: Chicken Coup
 
-## To do before submitting
-
-- [ ] Assign Tasks
-- [ ] Ask Does he allow pdf submission or must it be docx?
-- [ ] Ask What does he mean by adding a github link?
-- [ ] Agree on a meeting time.
-- [ ] Decide on a group name (change canvas and github names and retake screenshot)
-- [ ] Submit here: https://canvas.uw.edu/courses/1408528/assignments/5665687
+Slogan: Chickens who will bring in the new era
 
 ## Members
 
-Youssef Beltagy
+Youssef Beltagy 
 
 Jasdeep Brar
 
@@ -25,6 +18,19 @@ Jordan Quigtar
 
 ## Task Assignment
 
+Because we don't know assembly right now, we can't really divide the tasks. We intend to divide the work equally, but we don't know the workload. So for now, we will divide the tasks accodring to team organization #1 as such:
+
+- Youssef will handle Op-Code
+- Jasdeep will handle I/O
+- Temesgen will handle EA
+- Jordan will handle Op-Code too
+
+
+
+To implement a feature, the developer will make a branch for the feature. After implementing the feature, the developer would make a merge request on github. Everyone else has to agree to the merge.
+
+
+
 ## Meeting Times
 
 On Mondays from 8PM to 9PM.
@@ -35,7 +41,7 @@ If needed, on Wednesdays from 8PM to 9PM.
 
 ## Github Repository
 
-chicken-coup.ybeltagy.com
+https://chicken-coup.ybeltagy.com
 
 
 
