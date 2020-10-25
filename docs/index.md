@@ -2,34 +2,30 @@
 
 This is a disassembler for Motorola's 68k microprocessor. Given an address in memory, this disassembler will rewrite the code there. 
 
+
+
 ## Deadline 11/21/2020 
 
 We have a month. We can do it.
 
+
+
 ## Specifications
 
 
-Disassembler Description and resources:
+Disassembler Description and resources: [https://canvas.uw.edu/courses/1408528/pages/project-description](https://canvas.uw.edu/courses/1408528/pages/project-description)
 
-https://canvas.uw.edu/courses/1408528/pages/project-description
+The Specification Page: [https://canvas.uw.edu/courses/1408528/pages/specification](https://canvas.uw.edu/courses/1408528/pages/specification)
 
- 
+The Required Op-codes (Also listed below): [https://canvas.uw.edu/courses/1408528/pages/required-opcodes](https://canvas.uw.edu/courses/1408528/pages/specification)
 
-The Specification Page:
 
-https://canvas.uw.edu/courses/1408528/pages/specification
-
- 
-
-The Required Op-codes (Also listed below):
-
-https://canvas.uw.edu/courses/1408528/pages/required-opcodes
-
- 
 
 ## Required op-codes and addressing modes
 
 A list of all required tasks.
+
+
 
 ## Effective Addressing Modes:
 
@@ -41,6 +37,8 @@ A list of all required tasks.
 6. Address     Register Indirect with Pre decrementing
 7. Absolute     Long Address
 8. Absolute     Word Address
+
+
 
 ## Autumn 2020 Requirement:
 
@@ -63,6 +61,8 @@ A list of all required tasks.
 17. - [ ] RTS
 18. - [ ] BRA
 
+
+
 ## Design
 
 The program will ask the user for a starting and ending memory addresses to disassemble. Then the program will loop through the memory, word-by-word, and disassemble each word.
@@ -73,9 +73,13 @@ If the word matches an op-code, the subroutine for that specific op-code will be
 
 The program will print the op-code or data until the end of the output console or the end memory address. If the program reached the end of the output console, the program will wait for the user to press "enter" before it disassembles more. If the program reached the end of the memory, the program will ask restart and ask the user for a new starting and ending addresses.
 
+
+
 ### Flow-Chart
 
 ![](https://chicken-coup.ybeltagy.com/disassembler_design.png)
+
+
 
 ### Coding Guidelines
 
@@ -92,6 +96,8 @@ Test your code and document these tests. Follow the guidelines of [Test-Driven D
 
 
 Test that your code works when it should and fails when it shouldn't. You don't want to print an op-code you were given wrong input.
+
+
 
 #### Style Guidelines
 
@@ -113,6 +119,8 @@ Test your code. Write tests even before you begin implementation. And follow the
 
 Before you accept others' merge requests, read their code and test it. Don't assume their tests are enough. They might have missed, forgotten, or misinterpreted a case. We all know this, but just because the code works doesn't mean it is correct.
 
+
+
 #### Op-Code Subroutines
 
 If you are writing routine for move, label your routine MOVEROUTINE. Do the same for all op-codes (ADDROUTINE, NOPROUTINE, etc.).
@@ -129,7 +137,7 @@ Every op-code subroutine should only handle that op-code. It should read bytes f
  - **A6 += size of the opcode**
  - **Everything else should remain unchanged.**
 
-Every Op-Code should begin with
+Every op-code subroutine should begin with
 
 ```
 movem.l     A0/A2-A5/D0-D7, -(sp)
@@ -141,6 +149,8 @@ and end with
 movem.l     +(sp),A0/A2-A5/D0-D7
 rts
 ```
+
+
 
 #### Utility Subroutines
 
