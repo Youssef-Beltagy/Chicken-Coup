@@ -107,6 +107,7 @@ Write your labels in capital letters.
 
 If you are writing routine for move, label your routine MOVEROUTINE. Do the same for all op-codes (ADDROUTINE, NOPROUTINE, etc.).
 
+Prepend all labels in your subroutines with the subroutine name to avoid conflicts.
 
 
 #### Git Rules
@@ -146,7 +147,7 @@ movem.l     A0/A2-A5/D0-D7, -(sp)
 and end with
 
 ```
-movem.l     +(sp),A0/A2-A5/D0-D7
+movem.l     (sp)+,A0/A2-A5/D0-D7
 rts
 ```
 
