@@ -8,12 +8,22 @@
 START:                  ; first instruction of program
 
 * FIXME: For Testing, DELETE LATER *============================
+    bra         SKIP_TESTS
+
+
+    * write your opcodes here
+
+    
     nop *
     nop *
     nop *
     nop *
 * FIXME: For Testing, DELETE LATER *============================
 
+
+
+
+SKIP_TESTS:
     jsr         INPUT_OR_EXIT
     cmp.l       #-1,d7
     beq         EXIT_PROGRAM

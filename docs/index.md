@@ -131,7 +131,7 @@ Every op-code subroutine should only handle that op-code. It should read bytes f
 
 **Input = A6**
 
-**Output = A1**
+**Output = A1, A6**
 
 **Behavior:**
 
@@ -160,3 +160,11 @@ As we go forward in this program, we will find that some code will be used and r
 
 Some op-codes are similar and will have similar code. When we detect that, we will make a utility subroutine for that.
 
+
+## Notes (to do for youssef)
+
+ - Write explanations of what to do next.
+
+ - Make d7 as an error flag register
+
+ - Declare input and outputs universally
