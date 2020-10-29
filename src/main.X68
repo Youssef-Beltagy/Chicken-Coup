@@ -60,13 +60,18 @@ MAIN_LOOP:
     cmp.w       #$4E71,(a6)
     bne         SKIP_NOPROUTINE
     jsr         NOPROUTINE
+    bra         MAIN_LOOP_PRINT
+SKIP_NOPROUTINE:
 
-SKIP_NOPROUTINE
-    
+
+*put more op-code subroutine calls here.
+*Just like NOPROUTINE
+
+
+MAIN_LOOP_PRINT:
     *TODO: Implement the window that waits
     * for the user to press enter before it shows more lines
     * of disassembled code
-
     *TODO: Possibly add error checking before you print
     move.b      #14,d0
     trap        #15
@@ -307,6 +312,7 @@ LINE_END
 
 
     END    START        ; last line of source
+
 
 
 
