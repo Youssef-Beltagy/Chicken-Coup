@@ -15,8 +15,19 @@ START:                  ; first instruction of program
 
     
     nop *
+    add.l       #3,d0
+    add.b       #23,d1
+    move.l      #32,a2
     nop *
+    bra         SKIP_TESTS
+    beq         INPUT_OR_EXIT
+    jsr         INPUT_OR_EXIT
+    rts
     nop *
+    movem.l     d0-a7,-(sp)
+    movem.l     d0-a7,(sp)
+    movem.l     (sp)+,d0-a7
+    movem.l     (sp)+,d0-a7
     nop *
 * FIXME: For Testing, DELETE LATER *============================
 
@@ -77,6 +88,9 @@ SKIP_NOPROUTINE:
 *put more op-code subroutine calls here.
 *Just like NOPROUTINE
 
+* the default subroutine if no other routines are called is
+* the data ROUTINE
+    jsr         DATAROUTINE
 
 MAIN_LOOP_PRINT:
     *TODO: Implement the window that waits
@@ -256,6 +270,67 @@ LONG_FROM_STRING_END:
     rts
 * End of LONG_FROM_STRING subroutine
 
+STRING_FROM_WORD:
+*Description:
+*Given a word at a6, will convert that into a string of hex
+*digits at a1
+*nothing other than a1 will change
+*Input: a1, a6
+*Output: a1
+    movem.l     d0/d1,-(sp)
+
+    move.l      #0,d0
+    move.l      #0,d1
+
+STRING_FROM_WORD_LOOP:
+    move.w     (a6),d1 * get the word
+    cmp.b       #16,d0 * is the loop over?
+    beq         STRING_FROM_WORD_END
+
+    lsl.w       d0,d1  * gets rid of all excess more significant bits
+    lsr.w       #6,d1  * gets rid of all excess less significant bits
+    lsr.w       #6,d1  * and moves the wanted nibble to the Least significant nibble
+
+    add.b       #4,d0  * Next time, shift to the lift 4 more bits
+
+    cmp.b       #9,d1
+    bgt         STRING_FROM_WORD_CHAR * is this byte A-F
+    add.b       #48,d1 * this byte is 0-9
+    move.b      d1,(a1)+
+    bra         STRING_FROM_WORD_LOOP
+
+STRING_FROM_WORD_CHAR: *this byte is A-F
+    add.b       #55,d1
+    move.b      d1,(a1)+
+    bra         STRING_FROM_WORD_LOOP
+
+STRING_FROM_WORD_END:
+    movem.l     (sp)+,d0/d1
+    rts
+* End of STRING_FROM_WORD
+
+COPY_STRING_A2_TO_A1:
+*Description:
+*Given a null terminated string at a2, will
+*copy th string to a1 except the terminating null.
+*Nothing other than a1 will change
+*Input: a1, a2
+*Output: a1
+    movem.l     d0/a2,-(sp)
+
+    move.b      #0,d0
+
+COPY_STRING_A2_TO_A1_LOOP:
+    cmp.b       (a2),d0
+    beq         COPY_STRING_A2_TO_A1_END 
+    move.b      (a2)+,(a1)+
+    bra         COPY_STRING_A2_TO_A1_LOOP 
+
+COPY_STRING_A2_TO_A1_END
+    movem.l     (sp)+,d0/d2
+    rts
+* End of COPY_STRING_A2_TO_A1  
+
 * Op-cdoe Subroutines
 *-----------------------------------------------------------
 * Put your Op-Code Subroutine here
@@ -266,6 +341,7 @@ NOPROUTINE:
 *input: a6
 *Output: a1,a6
     movem.l     A0/A2-A5/D0-D7, -(sp)
+    *If needed, could optimize memory by not copying anything
 
     *THE movem.l is not necessary for this subroutine.
     *I put it here as an example.
@@ -276,7 +352,6 @@ NOPROUTINE:
     adda.l      #2,a6
 
 
-
     movem.l     (sp)+,A0/A2-A5/D0-D7
     rts
 
@@ -284,6 +359,34 @@ NOPROUTINE:
 * subroutines. TODO: delete this comment after others see it.
 
 * End of NOPROUTINE subroutine
+
+DATAROUTINE:
+*Description:
+*Loads "DATA: $" then the hex value of the word at (a6)
+*into a1 and increments a6 by two bytes
+*input: a6
+*Output: a1,a6
+    movem.l     A0/A2-A5/D0-D7, -(sp)
+    *if needed, could optimize memory by only copying a2
+
+    lea         DATA_OPCODE,a2
+    jsr         COPY_STRING_A2_TO_A1 *Copy "DATA: $" into a1
+
+    jsr         STRING_FROM_WORD     *Put the word into string from
+
+    lea         LINE_END,a2
+    jsr         COPY_STRING_A2_TO_A1
+
+    move.b      #0,(a1)+             *terminate the string
+
+    adda.l      #2,a6                *Move forward two bytes with a6
+
+    lea         BUFFER,a1            *Make a1 point to the start of the string
+
+    movem.l     (sp)+,A0/A2-A5/D0-D7
+    rts
+
+* End of DATAROUTINE subroutine
 
 * Variables
 *-----------------------------------------------------------
@@ -303,7 +406,10 @@ INPUT_END
     ds.l    1
 
 NOP_OPCODE
-    dc.b    'NOP ',CR,LF,0
+    dc.b    'NOP',CR,LF,0
+
+DATA_OPCODE
+    dc.b    'DATA: $',0 * must be null terminated
 
 INPUT_START_MESSAGE
     dc.b   'Please Enter Starting Address: ',0
@@ -322,6 +428,7 @@ LINE_END
 
 
     END    START        ; last line of source
+
 
 
 
