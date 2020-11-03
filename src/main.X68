@@ -4,6 +4,7 @@
 * Date       : 10/25/2020
 * Description: A 68k Disassembler
 *-----------------------------------------------------------
+
     ORG    $1000
 START:                  ; first instruction of program
 
@@ -12,7 +13,6 @@ START:                  ; first instruction of program
 
 
     * write your opcodes here
-
     
     nop *
     add.l       #3,d0
@@ -273,14 +273,14 @@ LONG_FROM_STRING_END:
 STRING_FROM_WORD:
 *Description:
 *Given a word at a6, will convert that into a string of hex
-*digits at a1
+*digits pointed to by a1
 *nothing other than a1 will change
 *Input: a1, a6
 *Output: a1
     movem.l     d0/d1,-(sp)
 
-    move.l      #0,d0
-    move.l      #0,d1
+    move.l      #0,d0 * loop variable. Used for shifting lift
+    move.l      #0,d1 * temp register for the word
 
 STRING_FROM_WORD_LOOP:
     move.w     (a6),d1 * get the word
@@ -337,10 +337,11 @@ COPY_STRING_A2_TO_A1_END
 
 NOPROUTINE:
 *Description:
-*Loads "NOP" into a1 and increments a6 by two bytes
+*Requires a1 to point to buffer.
+*Loads "NOP" into BUFFER and increments a6 by two bytes
 *input: a6
-*Output: a1,a6
-    movem.l     A0/A2-A5/D0-D7, -(sp)
+*Output: a6
+    movem.l     A0-A5/D0-D7, -(sp)
     *If needed, could optimize memory by not copying anything
 
     *THE movem.l is not necessary for this subroutine.
@@ -348,11 +349,13 @@ NOPROUTINE:
     *TODO: Delete the movem
 
     *TODO: CONSIDER ADDING an error case
-    lea         NOP_OPCODE,a1
+    lea         NOP_OPCODE,a2
+    jsr         COPY_STRING_A2_TO_A1
+    move.b      #0,(a1)+ *terminate the string
     adda.l      #2,a6
 
 
-    movem.l     (sp)+,A0/A2-A5/D0-D7
+    movem.l     (sp)+,A0-A5/D0-D7
     rts
 
 * You may want to define your constants next to your
@@ -363,10 +366,11 @@ NOPROUTINE:
 DATAROUTINE:
 *Description:
 *Loads "DATA: $" then the hex value of the word at (a6)
-*into a1 and increments a6 by two bytes
+*into buffer and increments a6 by two bytes.
+*Requires a1 to point to buffer.
 *input: a6
-*Output: a1,a6
-    movem.l     A0/A2-A5/D0-D7, -(sp)
+*Output: a6
+    movem.l     A0-A5/D0-D7, -(sp)
     *if needed, could optimize memory by only copying a2
 
     lea         DATA_OPCODE,a2
@@ -383,7 +387,7 @@ DATAROUTINE:
 
     lea         BUFFER,a1            *Make a1 point to the start of the string
 
-    movem.l     (sp)+,A0/A2-A5/D0-D7
+    movem.l     (sp)+,A0-A5/D0-D7
     rts
 
 * End of DATAROUTINE subroutine

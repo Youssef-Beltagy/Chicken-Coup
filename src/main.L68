@@ -1,0 +1,486 @@
+00001000 Starting Address
+Assembler used: EASy68K Editor/Assembler v5.16.01
+Created On: 11/2/2020 10:55:06 PM
+
+00000000                             1  *-----------------------------------------------------------
+00000000                             2  * Title      : Disassembler
+00000000                             3  * Written by : Youssef Beltagy
+00000000                             4  * Date       : 10/25/2020
+00000000                             5  * Description: A 68k Disassembler
+00000000                             6  *-----------------------------------------------------------
+00000000                             7  
+00001000                             8      ORG    $1000
+00001000                             9  START:                  ; first instruction of program
+00001000                            10  
+00001000                            11  * FIXME: For Testing, DELETE LATER *============================
+00001000  6000 0036                 12      bra         SKIP_TESTS
+00001004                            13  
+00001004                            14  
+00001004                            15      * write your opcodes here
+00001004                            16      
+00001004  4E71                      17      nop *
+00001006  5680                      18      add.l       #3,d0
+00001008  0601 0017                 19      add.b       #23,d1
+0000100C  247C 00000020             20      move.l      #32,a2
+00001012  4E71                      21      nop *
+00001014  6000 0022                 22      bra         SKIP_TESTS
+00001018  6700 00AC                 23      beq         INPUT_OR_EXIT
+0000101C  4EB9 000010C6             24      jsr         INPUT_OR_EXIT
+00001022  4E75                      25      rts
+00001024  4E71                      26      nop *
+00001026  48E7 FFFF                 27      movem.l     d0-a7,-(sp)
+0000102A  48D7 FFFF                 28      movem.l     d0-a7,(sp)
+0000102E  4CDF FFFF                 29      movem.l     (sp)+,d0-a7
+00001032  4CDF FFFF                 30      movem.l     (sp)+,d0-a7
+00001036  4E71                      31      nop *
+00001038                            32  * FIXME: For Testing, DELETE LATER *============================
+00001038                            33  
+00001038                            34  
+00001038                            35  
+00001038                            36  
+00001038                            37  SKIP_TESTS:
+00001038  4EB9 000010C6             38      jsr         INPUT_OR_EXIT
+0000103E  BEBC FFFFFFFF             39      cmp.l       #-1,d7
+00001044  6700 0070                 40      beq         EXIT_PROGRAM
+00001048                            41  
+00001048                            42  * FIXME: For Testing, DELETE LATER *============================
+00001048                            43      *prints the two hex digits
+00001048  2239 0000131E             44      move.l      INPUT_START,d1 *
+0000104E  103C 000F                 45      move.b      #15,d0 *
+00001052  143C 0010                 46      move.b      #16,d2 *
+00001056  4E4F                      47      trap        #15 *
+00001058                            48      
+00001058                            49      *starts a new line
+00001058  43F9 000013B7             50      lea         LINE_END,a1 *
+0000105E  103C 000E                 51      move.b      #14,d0 *
+00001062  4E4F                      52      trap        #15 *
+00001064                            53  
+00001064  2239 00001322             54      move.l      INPUT_END,d1 *
+0000106A  103C 000F                 55      move.b      #15,d0 *
+0000106E  143C 0010                 56      move.b      #16,d2 *
+00001072  4E4F                      57      trap        #15 * 
+00001074                            58  
+00001074                            59      *starts a new line
+00001074  43F9 000013B7             60      lea         LINE_END,a1 *
+0000107A  103C 000E                 61      move.b      #14,d0 *
+0000107E  4E4F                      62      trap        #15 *
+00001080                            63  
+00001080                            64  * FIXME: For Testing, DELETE LATER *============================
+00001080                            65  
+00001080                            66  
+00001080                            67  *TODO: IMPlement a subroutine for the loop if necessary
+00001080                            68  
+00001080                            69      *The Main Loop
+00001080  2C79 0000131E             70      movea.l     INPUT_START,a6
+00001086                            71  
+00001086                            72  MAIN_LOOP:
+00001086  BDF9 00001322             73      cmp.l       INPUT_END,a6
+0000108C  6E00 0028                 74      BGT         EXIT_PROGRAM
+00001090  43F9 0000126A             75      lea         BUFFER,a1
+00001096                            76  
+00001096                            77      *Inclusive of INPUT_END TODO: ASK the professor whether it should be inclusive or not
+00001096                            78      *Will read the op-code starting at INPUT_END
+00001096                            79      *That op-code could be 80 bytes, and there won't be a problem.
+00001096                            80  
+00001096  0C56 4E71                 81      cmp.w       #$4E71,(a6)
+0000109A  6600 000C                 82      bne         SKIP_NOPROUTINE
+0000109E  4EB9 00001222             83      jsr         NOPROUTINE
+000010A4  6000 0008                 84      bra         MAIN_LOOP_PRINT
+000010A8                            85  SKIP_NOPROUTINE:
+000010A8                            86  
+000010A8                            87  
+000010A8                            88  *put more op-code subroutine calls here.
+000010A8                            89  *Just like NOPROUTINE
+000010A8                            90  
+000010A8                            91  * the default subroutine if no other routines are called is
+000010A8                            92  * the data ROUTINE
+000010A8  4EB9 0000123C             93      jsr         DATAROUTINE
+000010AE                            94  
+000010AE                            95  MAIN_LOOP_PRINT:
+000010AE                            96      *TODO: Implement the window that waits
+000010AE                            97      * for the user to press enter before it shows more lines
+000010AE                            98      * of disassembled code
+000010AE                            99      *TODO: Possibly add error checking before you print
+000010AE  103C 000E                100      move.b      #14,d0
+000010B2  4E4F                     101      trap        #15
+000010B4  60D0                     102      bra         MAIN_LOOP
+000010B6                           103  
+000010B6                           104  EXIT_PROGRAM:
+000010B6  43F9 00001372            105      lea         TERMINATION_MESSAGE,a1
+000010BC  103C 000E                106      move.b      #14,d0
+000010C0  4E4F                     107      trap        #15
+000010C2                           108          
+000010C2  FFFF FFFF                109      SIMHALT             ; halt simulator
+000010C6                           110  
+000010C6                           111  * Utility Subroutines
+000010C6                           112  *-----------------------------------------------------------
+000010C6                           113  * Put your utility subroutines here
+000010C6                           114  
+000010C6                           115  INPUT_OR_EXIT:
+000010C6                           116  *Description:
+000010C6                           117  *Ensures that INPUT_START and INPUT_END
+000010C6                           118  *contain valid starting and ending addresses
+000010C6                           119  *or returns -1 if the program should terminate.
+000010C6                           120  *The addresses are valid if INPUT_END >= INPUT_START
+000010C6                           121  *sets d7 to 0 for valid input and to -1 for exit.
+000010C6                           122  *Nothing changes other than INPUT_START, INPUT_END, and d7
+000010C6                           123  *Input: nothing
+000010C6                           124  *Output: d7.l
+000010C6  48E7 FEFE                125      movem.l     d0-d6/a0-a6,-(sp)
+000010CA                           126  
+000010CA                           127  INPUT_OR_EXIT_LOOP:
+000010CA                           128      *prompts for input
+000010CA  43F9 00001334            129      lea         INPUT_START_MESSAGE,a1
+000010D0  103C 000E                130      move.b      #14,d0
+000010D4  4E4F                     131      trap        #15
+000010D6                           132  
+000010D6                           133      *get the input
+000010D6  43F9 0000126A            134      lea         BUFFER,a1
+000010DC  103C 0002                135      move.b      #2,d0
+000010E0  4E4F                     136      trap        #15
+000010E2                           137  
+000010E2                           138      *If the size of the string is less than 1
+000010E2  B27C 0001                139      cmp.w       #1,d1
+000010E6  6D00 005E                140      blt         INPUT_OR_EXIT_INVALID
+000010EA                           141  
+000010EA                           142      *program termination value
+000010EA  0C11 0071                143      cmp.b       #113,(a1) *113 is for 'q'
+000010EE  6700 0066                144      beq         INPUT_OR_EXIT_TERMINATE *return error code
+000010F2                           145  
+000010F2                           146      *convert the string into a long
+000010F2  4EB9 0000115E            147      jsr         LONG_FROM_STRING
+000010F8  BEBC FFFFFFFF            148      cmp.l       #-1,d7
+000010FE  6700 0046                149      beq         INPUT_OR_EXIT_INVALID  
+00001102                           150  
+00001102                           151      *copy the input
+00001102  23C6 0000131E            152      move.l      d6,INPUT_START
+00001108                           153      
+00001108                           154      *prompt for input
+00001108  43F9 00001354            155      lea         INPUT_END_MESSAGE,a1
+0000110E  103C 000E                156      move.b      #14,d0
+00001112  4E4F                     157      trap        #15
+00001114                           158  
+00001114                           159      *get the input
+00001114  43F9 0000126A            160      lea         BUFFER,a1
+0000111A  103C 0002                161      move.b      #2,d0
+0000111E  4E4F                     162      trap        #15
+00001120                           163  
+00001120                           164      *convert the string into a long
+00001120  4EB9 0000115E            165      jsr         LONG_FROM_STRING
+00001126  BEBC FFFFFFFF            166      cmp.l       #-1,d7
+0000112C  6700 0018                167      beq         INPUT_OR_EXIT_INVALID
+00001130                           168  
+00001130                           169      *copy the input
+00001130  23C6 00001322            170      move.l      d6,INPUT_END
+00001136                           171  
+00001136                           172      *Check the validity of the addresses
+00001136  BCB9 0000131E            173      cmp.l       INPUT_START,d6
+0000113C  6F00 0008                174      ble         INPUT_OR_EXIT_INVALID
+00001140                           175      *TODO: Print a unique message when the end address is 
+00001140                           176      * is smaller than the start address
+00001140                           177  
+00001140                           178      *set the error flag to 0
+00001140  7E00                     179      move.l      #0,d7
+00001142                           180  
+00001142                           181      *end the subroutine
+00001142  6000 0014                182      bra         INPUT_OR_EXIT_END
+00001146                           183  
+00001146                           184  INPUT_OR_EXIT_INVALID:
+00001146                           185      *prints invalid message
+00001146                           186      *and prompts for input again
+00001146  43F9 00001385            187      lea         INVALID_MESSAGE,a1
+0000114C  103C 000E                188      move.b      #14,d0
+00001150  4E4F                     189      trap        #15
+00001152  6000 FF76                190      bra         INPUT_OR_EXIT_LOOP
+00001156                           191  
+00001156                           192  INPUT_OR_EXIT_TERMINATE:
+00001156  7EFF                     193      move.l      #-1,d7
+00001158                           194  INPUT_OR_EXIT_END:
+00001158  4CDF 7F7F                195      movem.l     (sp)+,d0-d6/a0-a6
+0000115C  4E75                     196      rts
+0000115E                           197  * End of INPUT_OR_EXIT
+0000115E                           198  
+0000115E                           199  
+0000115E                           200  LONG_FROM_STRING:
+0000115E                           201  *Description:
+0000115E                           202  *Given a string at a1 and its size at d1.w, returns a hex number at 
+0000115E                           203  *d6 and 0 at d7.l, or -1 at d7.l to represent an error.
+0000115E                           204  *nothing other than d7 and d6 will change
+0000115E                           205  *Input: a1, d1.w
+0000115E                           206  *Output: d7.l, d6.l
+0000115E                           207  
+0000115E  48E7 FCFE                208      movem.l     d0-d5/a0-a6,-(sp)
+00001162                           209  
+00001162                           210      * The default value of d7
+00001162                           211      * is 0.
+00001162                           212      * If the program returns -1
+00001162                           213      * there was an error
+00001162  7E00                     214      move.l  #0,d7
+00001164                           215  
+00001164  B27C 0008                216      cmp.w   #8,d1
+00001168  6600 0060                217      BNE     LONG_FROM_STRING_ERROR *The string is too big
+0000116C                           218      
+0000116C                           219  
+0000116C  7C00                     220      move.l  #0,d6
+0000116E  7008                     221      move.l  #8,d0
+00001170                           222  
+00001170                           223  LONG_FROM_STRING_LOOP:
+00001170  B03C 0000                224      cmp.b   #0,d0
+00001174  6700 0056                225      beq     LONG_FROM_STRING_END
+00001178                           226  
+00001178  7200                     227      move.l  #0,d1
+0000117A  1219                     228      move.b  (a1)+,d1
+0000117C                           229  
+0000117C  B23C 0030                230      cmp.b   #48,d1
+00001180  6D00 0048                231      blt     LONG_FROM_STRING_ERROR
+00001184  B23C 003A                232      cmp.b   #58,d1 * '0'-'9' are 48-57
+00001188  6D00 002E                233      blt     LONG_FROM_STRING_DIGIT
+0000118C  B23C 0041                234      cmp.b   #65,d1
+00001190  6D00 0038                235      blt     LONG_FROM_STRING_ERROR
+00001194  B23C 0047                236      cmp.b   #71,d1 * 'A'-'F' are 65-70
+00001198  6D00 0024                237      blt     LONG_FROM_STRING_CAPITAL_CHAR
+0000119C  B23C 0061                238      cmp.b   #97,d1
+000011A0  6D00 0028                239      blt     LONG_FROM_STRING_ERROR
+000011A4  B23C 0067                240      cmp.b   #103,d1 * 'a'-'f' are 65-70
+000011A8  6D00 001A                241      blt     LONG_FROM_STRING_SMALL_CHAR
+000011AC  6000 001C                242      bra     LONG_FROM_STRING_ERROR
+000011B0                           243  
+000011B0                           244  LONG_FROM_STRING_LOOP_CONTINUE:
+000011B0  E98E                     245      lsl.l   #4,d6
+000011B2  DC81                     246      add.l   d1,d6
+000011B4  5300                     247      sub.b   #1,d0
+000011B6  60B8                     248      bra     LONG_FROM_STRING_LOOP
+000011B8                           249  
+000011B8                           250  LONG_FROM_STRING_DIGIT:
+000011B8                           251      *map 48-57 to 0-9
+000011B8  0401 0030                252      sub.b   #48,d1
+000011BC  60F2                     253      bra     LONG_FROM_STRING_LOOP_CONTINUE
+000011BE                           254  
+000011BE                           255  LONG_FROM_STRING_CAPITAL_CHAR:
+000011BE                           256      *map 65-70 to 10-15
+000011BE  0401 0037                257      sub.b   #55,d1
+000011C2  60EC                     258      bra     LONG_FROM_STRING_LOOP_CONTINUE
+000011C4                           259  
+000011C4                           260  LONG_FROM_STRING_SMALL_CHAR:
+000011C4                           261      *map 97-102 to 10-15
+000011C4  0401 0057                262      sub.b   #87,d1
+000011C8  60E6                     263      bra     LONG_FROM_STRING_LOOP_CONTINUE
+000011CA                           264  
+000011CA                           265  LONG_FROM_STRING_ERROR:
+000011CA  7EFF                     266      move.l      #-1,d7
+000011CC                           267  
+000011CC                           268  LONG_FROM_STRING_END:
+000011CC  4CDF 7F3F                269      movem.l     (sp)+,d0-d5/a0-a6
+000011D0  4E75                     270      rts
+000011D2                           271  * End of LONG_FROM_STRING subroutine
+000011D2                           272  
+000011D2                           273  STRING_FROM_WORD:
+000011D2                           274  *Description:
+000011D2                           275  *Given a word at a6, will convert that into a string of hex
+000011D2                           276  *digits pointed to by a1
+000011D2                           277  *nothing other than a1 will change
+000011D2                           278  *Input: a1, a6
+000011D2                           279  *Output: a1
+000011D2  48E7 C000                280      movem.l     d0/d1,-(sp)
+000011D6                           281  
+000011D6  7000                     282      move.l      #0,d0 * loop variable. Used for shifting lift
+000011D8  7200                     283      move.l      #0,d1 * temp register for the word
+000011DA                           284  
+000011DA                           285  STRING_FROM_WORD_LOOP:
+000011DA  3216                     286      move.w     (a6),d1 * get the word
+000011DC  B03C 0010                287      cmp.b       #16,d0 * is the loop over?
+000011E0  6700 0022                288      beq         STRING_FROM_WORD_END
+000011E4                           289  
+000011E4  E169                     290      lsl.w       d0,d1  * gets rid of all excess more significant bits
+000011E6  EC49                     291      lsr.w       #6,d1  * gets rid of all excess less significant bits
+000011E8  EC49                     292      lsr.w       #6,d1  * and moves the wanted nibble to the Least significant nibble
+000011EA                           293  
+000011EA  5800                     294      add.b       #4,d0  * Next time, shift to the lift 4 more bits
+000011EC                           295  
+000011EC  B23C 0009                296      cmp.b       #9,d1
+000011F0  6E00 000A                297      bgt         STRING_FROM_WORD_CHAR * is this byte A-F
+000011F4  0601 0030                298      add.b       #48,d1 * this byte is 0-9
+000011F8  12C1                     299      move.b      d1,(a1)+
+000011FA  60DE                     300      bra         STRING_FROM_WORD_LOOP
+000011FC                           301  
+000011FC                           302  STRING_FROM_WORD_CHAR: *this byte is A-F
+000011FC  0601 0037                303      add.b       #55,d1
+00001200  12C1                     304      move.b      d1,(a1)+
+00001202  60D6                     305      bra         STRING_FROM_WORD_LOOP
+00001204                           306  
+00001204                           307  STRING_FROM_WORD_END:
+00001204  4CDF 0003                308      movem.l     (sp)+,d0/d1
+00001208  4E75                     309      rts
+0000120A                           310  * End of STRING_FROM_WORD
+0000120A                           311  
+0000120A                           312  COPY_STRING_A2_TO_A1:
+0000120A                           313  *Description:
+0000120A                           314  *Given a null terminated string at a2, will
+0000120A                           315  *copy th string to a1 except the terminating null.
+0000120A                           316  *Nothing other than a1 will change
+0000120A                           317  *Input: a1, a2
+0000120A                           318  *Output: a1
+0000120A  48E7 8020                319      movem.l     d0/a2,-(sp)
+0000120E                           320  
+0000120E  103C 0000                321      move.b      #0,d0
+00001212                           322  
+00001212                           323  COPY_STRING_A2_TO_A1_LOOP:
+00001212  B012                     324      cmp.b       (a2),d0
+00001214  6700 0006                325      beq         COPY_STRING_A2_TO_A1_END 
+00001218  12DA                     326      move.b      (a2)+,(a1)+
+0000121A  60F6                     327      bra         COPY_STRING_A2_TO_A1_LOOP 
+0000121C                           328  
+0000121C                           329  COPY_STRING_A2_TO_A1_END
+0000121C  4CDF 0005                330      movem.l     (sp)+,d0/d2
+00001220  4E75                     331      rts
+00001222                           332  * End of COPY_STRING_A2_TO_A1  
+00001222                           333  
+00001222                           334  * Op-cdoe Subroutines
+00001222                           335  *-----------------------------------------------------------
+00001222                           336  * Put your Op-Code Subroutine here
+00001222                           337  
+00001222                           338  NOPROUTINE:
+00001222                           339  *Description:
+00001222                           340  *Requires a1 to point to buffer.
+00001222                           341  *Loads "NOP" into BUFFER and increments a6 by two bytes
+00001222                           342  *input: a6
+00001222                           343  *Output: a6
+00001222  48E7 FFFC                344      movem.l     A0-A5/D0-D7, -(sp)
+00001226                           345      *If needed, could optimize memory by not copying anything
+00001226                           346  
+00001226                           347      *THE movem.l is not necessary for this subroutine.
+00001226                           348      *I put it here as an example.
+00001226                           349      *TODO: Delete the movem
+00001226                           350  
+00001226                           351      *TODO: CONSIDER ADDING an error case
+00001226  45F9 00001326            352      lea         NOP_OPCODE,a2
+0000122C  4EB8 120A                353      jsr         COPY_STRING_A2_TO_A1
+00001230  12FC 0000                354      move.b      #0,(a1)+ *terminate the string
+00001234  548E                     355      adda.l      #2,a6
+00001236                           356  
+00001236                           357  
+00001236  4CDF 3FFF                358      movem.l     (sp)+,A0-A5/D0-D7
+0000123A  4E75                     359      rts
+0000123C                           360  
+0000123C                           361  * You may want to define your constants next to your
+0000123C                           362  * subroutines. TODO: delete this comment after others see it.
+0000123C                           363  
+0000123C                           364  * End of NOPROUTINE subroutine
+0000123C                           365  
+0000123C                           366  DATAROUTINE:
+0000123C                           367  *Description:
+0000123C                           368  *Loads "DATA: $" then the hex value of the word at (a6)
+0000123C                           369  *into buffer and increments a6 by two bytes.
+0000123C                           370  *Requires a1 to point to buffer.
+0000123C                           371  *input: a6
+0000123C                           372  *Output: a6
+0000123C  48E7 FFFC                373      movem.l     A0-A5/D0-D7, -(sp)
+00001240                           374      *if needed, could optimize memory by only copying a2
+00001240                           375  
+00001240  45F9 0000132C            376      lea         DATA_OPCODE,a2
+00001246  4EB8 120A                377      jsr         COPY_STRING_A2_TO_A1 *Copy "DATA: $" into a1
+0000124A                           378  
+0000124A  4EB8 11D2                379      jsr         STRING_FROM_WORD     *Put the word into string from
+0000124E                           380  
+0000124E  45F9 000013B7            381      lea         LINE_END,a2
+00001254  4EB8 120A                382      jsr         COPY_STRING_A2_TO_A1
+00001258                           383  
+00001258  12FC 0000                384      move.b      #0,(a1)+             *terminate the string
+0000125C                           385  
+0000125C  548E                     386      adda.l      #2,a6                *Move forward two bytes with a6
+0000125E                           387  
+0000125E  43F9 0000126A            388      lea         BUFFER,a1            *Make a1 point to the start of the string
+00001264                           389  
+00001264  4CDF 3FFF                390      movem.l     (sp)+,A0-A5/D0-D7
+00001268  4E75                     391      rts
+0000126A                           392  
+0000126A                           393  * End of DATAROUTINE subroutine
+0000126A                           394  
+0000126A                           395  * Variables
+0000126A                           396  *-----------------------------------------------------------
+0000126A                           397  * Put variables and constants here
+0000126A                           398  
+0000126A  =0000000D                399  CR          EQU $0D
+0000126A  =0000000A                400  LF          EQU $0A
+0000126A                           401  
+0000126A                           402  BUFFER
+0000126A                           403   * an input BUFFER
+0000126A                           404      ds.b   180 *A BUFFER of 180 bytes
+0000131E                           405  
+0000131E                           406  INPUT_START
+0000131E                           407      ds.l    1
+00001322                           408  
+00001322                           409  INPUT_END
+00001322                           410      ds.l    1
+00001326                           411  
+00001326                           412  NOP_OPCODE
+00001326= 4E 4F 50 0D 0A 00        413      dc.b    'NOP',CR,LF,0
+0000132C                           414  
+0000132C                           415  DATA_OPCODE
+0000132C= 44 41 54 41 3A 20 ...    416      dc.b    'DATA: $',0 * must be null terminated
+00001334                           417  
+00001334                           418  INPUT_START_MESSAGE
+00001334= 50 6C 65 61 73 65 ...    419      dc.b   'Please Enter Starting Address: ',0
+00001354                           420  
+00001354                           421  INPUT_END_MESSAGE
+00001354= 50 6C 65 61 73 65 ...    422      dc.b   'Please Enter Ending Address: ',0
+00001372                           423  
+00001372                           424  TERMINATION_MESSAGE
+00001372= 50 72 6F 67 72 61 ...    425      dc.b    'Program Terminated',0
+00001385                           426  
+00001385                           427  INVALID_MESSAGE
+00001385= 49 6E 76 61 6C 69 ...    428      dc.b    'Invalid input. Input must be 8-digit hex number',CR,LF,0
+000013B7                           429      
+000013B7                           430  LINE_END
+000013B7= 0D 0A 00                 431      dc.b    CR,LF,0
+000013BA                           432  
+000013BA                           433  
+000013BA                           434      END    START        ; last line of source
+
+No errors detected
+No warnings generated
+
+
+SYMBOL TABLE INFORMATION
+Symbol-name         Value
+-------------------------
+BUFFER              126A
+COPY_STRING_A2_TO_A1  120A
+COPY_STRING_A2_TO_A1_END  121C
+COPY_STRING_A2_TO_A1_LOOP  1212
+CR                  D
+DATAROUTINE         123C
+DATA_OPCODE         132C
+EXIT_PROGRAM        10B6
+INPUT_END           1322
+INPUT_END_MESSAGE   1354
+INPUT_OR_EXIT       10C6
+INPUT_OR_EXIT_END   1158
+INPUT_OR_EXIT_INVALID  1146
+INPUT_OR_EXIT_LOOP  10CA
+INPUT_OR_EXIT_TERMINATE  1156
+INPUT_START         131E
+INPUT_START_MESSAGE  1334
+INVALID_MESSAGE     1385
+LF                  A
+LINE_END            13B7
+LONG_FROM_STRING    115E
+LONG_FROM_STRING_CAPITAL_CHAR  11BE
+LONG_FROM_STRING_DIGIT  11B8
+LONG_FROM_STRING_END  11CC
+LONG_FROM_STRING_ERROR  11CA
+LONG_FROM_STRING_LOOP  1170
+LONG_FROM_STRING_LOOP_CONTINUE  11B0
+LONG_FROM_STRING_SMALL_CHAR  11C4
+MAIN_LOOP           1086
+MAIN_LOOP_PRINT     10AE
+NOPROUTINE          1222
+NOP_OPCODE          1326
+SKIP_NOPROUTINE     10A8
+SKIP_TESTS          1038
+START               1000
+STRING_FROM_WORD    11D2
+STRING_FROM_WORD_CHAR  11FC
+STRING_FROM_WORD_END  1204
+STRING_FROM_WORD_LOOP  11DA
+TERMINATION_MESSAGE  1372
