@@ -42,19 +42,19 @@ A list of all required tasks.
 
 ## Autumn 2020 Requirement:
 
-1. [x] NOP
+1. [x] NOP -- Implemented by Youssef
 2. [ ] MOVE
 3. [ ] MOVEM
 4. [ ] ADD
 5. [ ] SUB
 6. [ ] MULS
-7. [ ] DIVU
+7. [ ] DIVU -- No longer required
 8. [ ] LEA
 9. [ ] AND
 10. [ ] NOT
 11. [ ] LSL
-12. [ ] LSR
-13. [ ] ASL
+12. [ ] LSR -- No longer required
+13. [ ] ASL -- No longer required
 14. [ ] ASR
 15. [ ] Bcc     (BLT, BGE, BEQ)
 16. [ ] JSR
@@ -131,24 +131,24 @@ Every op-code subroutine should only handle that op-code. It should read bytes f
 
 **Input = A6**
 
-**Output = A1, A6**
+**Output = value pointed to by A1, A6**
 
 **Behavior:**
 
- - **Process opcode and put the address of what should printed in A1.**
+ - **Process opcode and put the address of what should printed in the value pointed to by A1.**
  - **A6 += size of the opcode**
  - **Everything else should remain unchanged.**
 
 Every op-code subroutine should begin with
 
 ```
-movem.l     A0/A2-A5/D0-D7, -(sp)
+movem.l     A0-A5/D0-D7, -(sp)
 ```
 
 and end with
 
 ```
-movem.l     (sp)+,A0/A2-A5/D0-D7
+movem.l     (sp)+,A0-A5/D0-D7
 rts
 ```
 
@@ -160,11 +160,26 @@ As we go forward in this program, we will find that some code will be used and r
 
 Some op-codes are similar and will have similar code. When we detect that, we will make a utility subroutine for that.
 
+LONG_FROM_STRING:
+*Description:
+*Given a string at a1 and its size at d1.w, returns a hex number at 
+*d6 and 0 at d7.l, or -1 at d7.l to represent an error.
+*nothing other than d7 and d6 will change
+*Input: a1, d1.w
+*Output: d7.l, d6.l
 
-## Notes (to do for youssef)
+STRING_FROM_WORD:
+*Description:
+*Given a word at a6, will convert that into a string of hex
+*digits pointed to by a1
+*nothing other than a1 will change
+*Input: a1, a6
+*Output: a1
 
- - Write explanations of what to do next.
-
- - Make d7 as an error flag register
-
- - Declare input and outputs universally
+COPY_STRING_A2_TO_A1:
+*Description:
+*Given a null terminated string at a2, will
+*copy th string to a1 except the terminating null.
+*a1 and the value it points to will change.
+*Input: a1, a2
+*Output: a1
