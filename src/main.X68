@@ -327,7 +327,7 @@ COPY_STRING_A2_TO_A1_LOOP:
     bra         COPY_STRING_A2_TO_A1_LOOP 
 
 COPY_STRING_A2_TO_A1_END
-    movem.l     (sp)+,d0/d2
+    movem.l     (sp)+,d0/a2
     rts
 * End of COPY_STRING_A2_TO_A1  
 
@@ -340,8 +340,8 @@ NOPROUTINE:
 *Requires a1 to point to buffer.
 *Loads "NOP" into BUFFER and increments a6 by two bytes
 *input: a6
-*Output: a6
-    movem.l     A0-A5/D0-D7, -(sp)
+*Output: a6, the value pointed to by a1
+    movem.l     A0/A2-A5/D0-D7, -(sp)
     *If needed, could optimize memory by not copying anything
 
     *THE movem.l is not necessary for this subroutine.
@@ -355,7 +355,7 @@ NOPROUTINE:
     adda.l      #2,a6
 
 
-    movem.l     (sp)+,A0-A5/D0-D7
+    movem.l     (sp)+,A0/A2-A5/D0-D7
     rts
 
 * You may want to define your constants next to your
@@ -369,8 +369,8 @@ DATAROUTINE:
 *into buffer and increments a6 by two bytes.
 *Requires a1 to point to buffer.
 *input: a6
-*Output: a6
-    movem.l     A0-A5/D0-D7, -(sp)
+*Output: a6, the value pointed to by a1
+    movem.l     A0/A2-A5/D0-D7, -(sp)
     *if needed, could optimize memory by only copying a2
 
     lea         DATA_OPCODE,a2
@@ -387,7 +387,7 @@ DATAROUTINE:
 
     lea         BUFFER,a1            *Make a1 point to the start of the string
 
-    movem.l     (sp)+,A0-A5/D0-D7
+    movem.l     (sp)+,A0/A2-A5/D0-D7
     rts
 
 * End of DATAROUTINE subroutine
