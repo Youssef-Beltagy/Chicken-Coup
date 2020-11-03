@@ -42,24 +42,24 @@ A list of all required tasks.
 
 ## Autumn 2020 Requirement:
 
-1. - [ ] NOP
-2. - [ ] MOVE
-3. - [ ] MOVEM
-4. - [ ] ADD
-5. - [ ] SUB
-6. - [ ] MULS
-7. - [ ] DIVU
-8. - [ ] LEA
-9. - [ ] AND
-10. - [ ] NOT
-11. - [ ] LSL
-12. - [ ] LSR
-13. - [ ] ASL
-14. - [ ] ASR
-15. - [ ] Bcc     (BLT, BGE, BEQ)
-16. - [ ] JSR
-17. - [ ] RTS
-18. - [ ] BRA
+1. [x] NOP
+2. [ ] MOVE
+3. [ ] MOVEM
+4. [ ] ADD
+5. [ ] SUB
+6. [ ] MULS
+7. [ ] DIVU
+8. [ ] LEA
+9. [ ] AND
+10. [ ] NOT
+11. [ ] LSL
+12. [ ] LSR
+13. [ ] ASL
+14. [ ] ASR
+15. [ ] Bcc     (BLT, BGE, BEQ)
+16. [ ] JSR
+17. [ ] RTS
+18. [ ] BRA
 
 
 
@@ -69,9 +69,9 @@ The program will ask the user for a starting and ending memory addresses to disa
 
 Then the program will check if the read word matches a specific op-code signature. The program checks the op-codes one by one.
 
-If the word matches an op-code, the subroutine for that specific op-code will be called. If the word didn't match a subroutine, the word will treated as data, and the program will call subroutine of the data.
+If the word matches an op-code, the subroutine for that specific op-code will be called. If the word didn't match a subroutine, the word will be treated as data, and the program will call subroutine of the data.
 
-The program will print the op-code or data until the end of the output console or the end memory address. If the program reached the end of the output console, the program will wait for the user to press "enter" before it disassembles more. If the program reached the end of the memory, the program will ask restart and ask the user for a new starting and ending addresses.
+The program will print the op-code or data until the end of the output console or the end memory address. If the program reached the end of the output console, the program will wait for the user to press "enter" before it disassembles more. If the program reached the end of the memory, the program will restart and ask the user for a new starting and ending addresses.
 
 
 
@@ -95,7 +95,7 @@ Test your code and document these tests. Follow the guidelines of [Test-Driven D
 6. Repeat and accumulate unit tests
 
 
-Test that your code works when it should and fails when it shouldn't. You don't want to print an op-code you were given wrong input.
+Test that your code works when it should and fails when it shouldn't. You don't want to print an op-code when you were given wrong input.
 
 
 
@@ -105,7 +105,9 @@ Write your code in small letters.
 
 Write your labels in capital letters.
 
-If you are writing routine for move, label your routine MOVEROUTINE. Do the same for all op-codes (ADDROUTINE, NOPROUTINE, etc.).
+If you are writing the subroutine for move, label your subroutine MOVEROUTINE. Do the same for all op-codes (ADDROUTINE, NOPROUTINE, etc.).
+
+Prepend all labels in your subroutines with the subroutine name to avoid conflicts.
 
 
 
@@ -129,7 +131,7 @@ Every op-code subroutine should only handle that op-code. It should read bytes f
 
 **Input = A6**
 
-**Output = A1**
+**Output = A1, A6**
 
 **Behavior:**
 
@@ -146,7 +148,7 @@ movem.l     A0/A2-A5/D0-D7, -(sp)
 and end with
 
 ```
-movem.l     +(sp),A0/A2-A5/D0-D7
+movem.l     (sp)+,A0/A2-A5/D0-D7
 rts
 ```
 
@@ -158,3 +160,11 @@ As we go forward in this program, we will find that some code will be used and r
 
 Some op-codes are similar and will have similar code. When we detect that, we will make a utility subroutine for that.
 
+
+## Notes (to do for youssef)
+
+ - Write explanations of what to do next.
+
+ - Make d7 as an error flag register
+
+ - Declare input and outputs universally
