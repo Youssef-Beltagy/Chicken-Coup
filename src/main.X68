@@ -97,6 +97,7 @@ MAIN_LOOP_PRINT:
     * for the user to press enter before it shows more lines
     * of disassembled code
     *TODO: Possibly add error checking before you print
+    lea         BUFFER,a1
     move.b      #14,d0
     trap        #15
     bra         MAIN_LOOP
@@ -384,8 +385,6 @@ DATAROUTINE:
     move.b      #0,(a1)+             *terminate the string
 
     adda.l      #2,a6                *Move forward two bytes with a6
-
-    lea         BUFFER,a1            *Make a1 point to the start of the string
 
     movem.l     (sp)+,A0/A2-A5/D0-D7
     rts
