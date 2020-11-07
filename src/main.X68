@@ -80,13 +80,18 @@ SKIP_TESTS:
     movea.l     INPUT_START,a6
 
 MAIN_LOOP:
-    cmp.l       INPUT_END,a6
+    cmp.l       INPUT_END,a6     
     BGT         EXIT_PROGRAM
     lea         BUFFER,a1
 
-    *Inclusive of INPUT_END TODO: ASK the professor whether it should be inclusive or not
+    *Inclusive of INPUT_END
     *Will read the op-code starting at INPUT_END
     *That op-code could be 80 bytes, and there won't be a problem.
+
+    move.l      a6,d2
+    jsr         STRING_FROM_LONG
+    move.b      #9,(a1)+ * print a tab.
+
 
     cmp.w       #$4E71,(a6)
     bne         SKIP_NOPROUTINE
@@ -166,7 +171,11 @@ INPUT_OR_EXIT_LOOP:
     *convert the string into a long
     jsr         LONG_FROM_STRING
     cmp.l       #-1,d7
-    beq         INPUT_OR_EXIT_INVALID  
+    beq         INPUT_OR_EXIT_INVALID
+
+    *Test that the start address is even
+    btst        #0,d6 *TODO: Possibly print a special message for odd start input.
+    bne         INPUT_OR_EXIT_INVALID 
 
     *copy the input
     move.l      d6,INPUT_START
@@ -191,7 +200,7 @@ INPUT_OR_EXIT_LOOP:
 
     *Check the validity of the addresses
     cmp.l       INPUT_START,d6
-    ble         INPUT_OR_EXIT_INVALID
+    blt         INPUT_OR_EXIT_INVALID
     *TODO: Print a unique message when the end address is 
     * is smaller than the start address
 
@@ -378,13 +387,8 @@ NOPROUTINE:
 *input: a6
 *Output: a6, the value pointed to by a1
     movem.l     A0/A2-A5/D0-D7, -(sp)
-    *If needed, could optimize memory by not copying anything
+    *If needed, could optimize memory by not copying anything except a2
 
-    *THE movem.l is not necessary for this subroutine.
-    *I put it here as an example.
-    *TODO: Delete the movem
-
-    *TODO: CONSIDER ADDING an error case
     lea         NOP_OPCODE,a2
     jsr         COPY_STRING_A2_TO_A1
     move.b      #0,(a1)+ *terminate the string
@@ -393,9 +397,6 @@ NOPROUTINE:
 
     movem.l     (sp)+,A0/A2-A5/D0-D7
     rts
-
-* You may want to define your constants next to your
-* subroutines. TODO: delete this comment after others see it.
 
 * End of NOPROUTINE subroutine
 
@@ -489,10 +490,10 @@ BCCROUTINE_GET_ADDRESS:
     *TODO: Or does it actually point to current instruction + 2. That would mean it points to data.
     *TODO: This edge case will only be apparent if the difference is 16bits or 32bits.
     *TODO: I must test those cases.
-    *I tested with Word. I can't test with long yet because this file is not long enough.
-    *The professor was wrong and the manual is right.
-    *It is the current instruction + 2 even if the next word is the displacement.
-    *For the sake of implementation, I will trust the professor's words for now.
+    *TODO: I tested with Word. I can't test with long yet because this file is not long enough.
+    *TODO: The professor was wrong and the manual is right.
+    *TODO: It is the current instruction + 2 even if the next word is the displacement.
+    *TODO: For the sake of implementation, I will trust the professor's words for now.
 
     move.w      (a6),d0
 
@@ -555,8 +556,8 @@ BCCROUTINE_END:
 *-----------------------------------------------------------
 * Put variables and constants here
 
-CR          EQU $0D
-LF          EQU $0A
+CR          equ $0D
+LF          equ $0A
 
 BUFFER
  * an input BUFFER
@@ -572,19 +573,19 @@ NOP_OPCODE
     dc.b    'NOP',CR,LF,0
 
 DATA_OPCODE
-    dc.b    'DATA: $',0 * must be null terminated
+    dc.b    'DATA:  $',0 * must be null terminated
 
 BRA_OPCODE
-    dc.b    'BRA   $',0
+    dc.b    'BRA    $',0
 
 BLT_OPCODE
-    dc.b    'BLT   $',0
+    dc.b    'BLT    $',0
 
 BGE_OPCODE
-    dc.b    'BGE   $',0
+    dc.b    'BGE    $',0
 
 BEQ_OPCODE
-    dc.b    'BEQ   $',0
+    dc.b    'BEQ    $',0
 
 INPUT_START_MESSAGE
     dc.b   'Please Enter Starting Address: ',0
