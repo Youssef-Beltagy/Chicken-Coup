@@ -9,12 +9,22 @@
 START:                  ; first instruction of program
 
 * FIXME: For Testing, DELETE LATER *============================
-    bra         SKIP_TESTS
+    bra         SKIP_TESTS * don't actually run the tests
 
 
     * write your opcodes here
-    
+    bra         BCCROUTINE_END
     nop *
+    beq         MAIN_LOOP
+    bra         START
+    beq         MAIN_LOOP_PRINT
+    bra         DATAROUTINE
+    blt         DATAROUTINE
+    beq         DATAROUTINE
+    bgt         DATAROUTINE
+    bge         DATAROUTINE
+    swap        d0
+    adda.l      #1,a0
     add.l       #3,d0
     add.b       #23,d1
     move.l      #32,a2
@@ -70,19 +80,33 @@ SKIP_TESTS:
     movea.l     INPUT_START,a6
 
 MAIN_LOOP:
-    cmp.l       INPUT_END,a6
+    cmp.l       INPUT_END,a6     
     BGT         EXIT_PROGRAM
     lea         BUFFER,a1
 
-    *Inclusive of INPUT_END TODO: ASK the professor whether it should be inclusive or not
+    *Inclusive of INPUT_END
     *Will read the op-code starting at INPUT_END
     *That op-code could be 80 bytes, and there won't be a problem.
+
+    move.l      a6,d2
+    jsr         STRING_FROM_LONG
+    move.b      #9,(a1)+ * print a tab.
+
 
     cmp.w       #$4E71,(a6)
     bne         SKIP_NOPROUTINE
     jsr         NOPROUTINE
     bra         MAIN_LOOP_PRINT
 SKIP_NOPROUTINE:
+
+    move.w      (a6),d0
+    lsr.w       #6,d0
+    lsr.w       #6,d0
+    cmp.b       #6,d0
+    bne         SKIP_BCCROUTINE
+    jsr         BCCROUTINE
+    bra         MAIN_LOOP_PRINT
+SKIP_BCCROUTINE:
 
 
 *put more op-code subroutine calls here.
@@ -97,6 +121,7 @@ MAIN_LOOP_PRINT:
     * for the user to press enter before it shows more lines
     * of disassembled code
     *TODO: Possibly add error checking before you print
+    lea         BUFFER,a1
     move.b      #14,d0
     trap        #15
     bra         MAIN_LOOP
@@ -146,7 +171,11 @@ INPUT_OR_EXIT_LOOP:
     *convert the string into a long
     jsr         LONG_FROM_STRING
     cmp.l       #-1,d7
-    beq         INPUT_OR_EXIT_INVALID  
+    beq         INPUT_OR_EXIT_INVALID
+
+    *Test that the start address is even
+    btst        #0,d6 *TODO: Possibly print a special message for odd start input.
+    bne         INPUT_OR_EXIT_INVALID 
 
     *copy the input
     move.l      d6,INPUT_START
@@ -171,7 +200,7 @@ INPUT_OR_EXIT_LOOP:
 
     *Check the validity of the addresses
     cmp.l       INPUT_START,d6
-    ble         INPUT_OR_EXIT_INVALID
+    blt         INPUT_OR_EXIT_INVALID
     *TODO: Print a unique message when the end address is 
     * is smaller than the start address
 
@@ -272,18 +301,18 @@ LONG_FROM_STRING_END:
 
 STRING_FROM_WORD:
 *Description:
-*Given a word at a6, will convert that into a string of hex
+*Given a word at d2.w, will convert that into a string of hex
 *digits pointed to by a1
-*nothing other than a1 will change
-*Input: a1, a6
-*Output: a1
+*nothing other than a1 and the memory it points to will change
+*Input: a1, d2.w
+*Output: a1 and the memory it points to
     movem.l     d0/d1,-(sp)
 
     move.l      #0,d0 * loop variable. Used for shifting lift
     move.l      #0,d1 * temp register for the word
 
 STRING_FROM_WORD_LOOP:
-    move.w     (a6),d1 * get the word
+    move.w      d2,d1 * get the word
     cmp.b       #16,d0 * is the loop over?
     beq         STRING_FROM_WORD_END
 
@@ -306,6 +335,22 @@ STRING_FROM_WORD_CHAR: *this byte is A-F
 
 STRING_FROM_WORD_END:
     movem.l     (sp)+,d0/d1
+    rts
+* End of STRING_FROM_WORD
+
+STRING_FROM_LONG:
+*Description:
+*Given a long at d2.l, will convert that into a string of hex
+*digits pointed to by a1
+*nothing other than a1 and the memory it points to will change
+*Input: a1, d2.l
+*Output: a1 and the memory it points to
+
+    swap        d2
+    jsr         STRING_FROM_WORD
+    swap        d2
+    jsr         STRING_FROM_WORD
+
     rts
 * End of STRING_FROM_WORD
 
@@ -342,13 +387,8 @@ NOPROUTINE:
 *input: a6
 *Output: a6, the value pointed to by a1
     movem.l     A0/A2-A5/D0-D7, -(sp)
-    *If needed, could optimize memory by not copying anything
+    *If needed, could optimize memory by not copying anything except a2
 
-    *THE movem.l is not necessary for this subroutine.
-    *I put it here as an example.
-    *TODO: Delete the movem
-
-    *TODO: CONSIDER ADDING an error case
     lea         NOP_OPCODE,a2
     jsr         COPY_STRING_A2_TO_A1
     move.b      #0,(a1)+ *terminate the string
@@ -357,9 +397,6 @@ NOPROUTINE:
 
     movem.l     (sp)+,A0/A2-A5/D0-D7
     rts
-
-* You may want to define your constants next to your
-* subroutines. TODO: delete this comment after others see it.
 
 * End of NOPROUTINE subroutine
 
@@ -371,11 +408,12 @@ DATAROUTINE:
 *input: a6
 *Output: a6, the value pointed to by a1
     movem.l     A0/A2-A5/D0-D7, -(sp)
-    *if needed, could optimize memory by only copying a2
+    *if needed, could optimize memory by only copying a2 and d2
 
     lea         DATA_OPCODE,a2
     jsr         COPY_STRING_A2_TO_A1 *Copy "DATA: $" into a1
 
+    move.w      (a6),d2
     jsr         STRING_FROM_WORD     *Put the word into string from
 
     lea         LINE_END,a2
@@ -385,19 +423,141 @@ DATAROUTINE:
 
     adda.l      #2,a6                *Move forward two bytes with a6
 
-    lea         BUFFER,a1            *Make a1 point to the start of the string
-
     movem.l     (sp)+,A0/A2-A5/D0-D7
     rts
 
 * End of DATAROUTINE subroutine
 
+BCCROUTINE:
+*Description:
+*HANDLES BRA, BLT, BEQ, BGE
+*IF it is any other BCC, this subroutine calls the data routine.
+*TODO: Check with the professor if he wants us to print "UNKOWN BCC 0xdataaddress"
+*or just regulary print the data.
+*Requires a1 to point to buffer.
+*input: a6
+*Output: a6, the value pointed to by a1
+    movem.l     A0/A2-A5/D0-D7, -(sp)
+    *if needed, could optimize memory by only copying a2
+
+    move.l      #0,d0
+    move.w      (a6),d0
+
+    *GET the condition nibble
+    lsl.w       #4,d0 *get rid of the most significant nibble
+    lsr.w       #6,d0 *prepend with 12 zeros.
+    lsr.w       #6,d0
+
+    *Checks for BRA
+    cmp.b       #$00,d0
+    bne         BCCROUTINE_NOT_BRA
+    lea         BRA_OPCODE,a2
+    jsr         COPY_STRING_A2_TO_A1
+    bra         BCCROUTINE_GET_ADDRESS
+
+
+BCCROUTINE_NOT_BRA: *Checks for BLT
+    cmp.b       #$0D,d0
+    bne         BCCROUTINE_NOT_BLT
+    lea         BLT_OPCODE,a2
+    jsr         COPY_STRING_A2_TO_A1
+    bra         BCCROUTINE_GET_ADDRESS
+
+
+BCCROUTINE_NOT_BLT: *Checks for BGE
+    cmp.b       #$0C,d0
+    bne         BCCROUTINE_NOT_BGE
+    lea         BGE_OPCODE,a2
+    jsr         COPY_STRING_A2_TO_A1
+    bra         BCCROUTINE_GET_ADDRESS
+
+
+BCCROUTINE_NOT_BGE: *Checks for BEQ
+    cmp.b       #$07,d0
+    bne         BCCROUTINE_INVALID
+    lea         BEQ_OPCODE,a2
+    jsr         COPY_STRING_A2_TO_A1
+    bra         BCCROUTINE_GET_ADDRESS
+
+
+BCCROUTINE_INVALID:*TODO: Check with the professor what behavior he wants here exactly
+    jsr         DATAROUTINE
+    bra         BCCROUTINE_END
+
+
+BCCROUTINE_GET_ADDRESS:
+    *TODO: Does the PC point to the next insturction as the professor said?
+    *TODO: Or does it actually point to current instruction + 2. That would mean it points to data.
+    *TODO: This edge case will only be apparent if the difference is 16bits or 32bits.
+    *TODO: I must test those cases.
+    *TODO: I tested with Word. I can't test with long yet because this file is not long enough.
+    *TODO: The professor was wrong and the manual is right.
+    *TODO: It is the current instruction + 2 even if the next word is the displacement.
+    *TODO: For the sake of implementation, I will trust the professor's words for now.
+
+    move.w      (a6),d0
+
+    *If the least significant byte is 00, the difference is
+    *in the next word.
+    cmp.b       #$00,d0
+    beq         BCCROUTINE_GET_ADDRESS_WORD
+
+    *If the least significant byte is $ff, the difference is 
+    *in the next long.
+    cmp.b       #$ff,d0
+    beq         BCCROUTINE_GET_ADDRESS_LONG
+
+    *otherwise, the difference is a byte
+    adda.l      #2,a6
+    move.l      a6,d2
+
+    *extend the displacement and add it to d2
+    ext.w       d0
+    ext.l       d0
+    add.l       d0,d2
+    jsr         STRING_FROM_LONG
+    bra         BCCROUTINE_VALID_END
+
+
+BCCROUTINE_GET_ADDRESS_WORD:
+    adda.l      #2,a6 * increment a6
+    move.l      a6,d2 * copy a6 before it is incremented further.
+
+
+    move.w      (a6)+,d0 *increment a6 and get the word
+    ext.l       d0 *extend the dispalcement
+
+    add.l       d0,d2
+    jsr         STRING_FROM_LONG
+    bra         BCCROUTINE_VALID_END
+
+
+BCCROUTINE_GET_ADDRESS_LONG:
+    adda.l      #2,a6 *increment a6
+    move.l      a6,d2 *copy a6 before it is incremented further.
+
+    move.l      (a6)+,d0 *increment a6 and get the long
+
+    add.l       d0,d2
+    jsr         STRING_FROM_LONG
+
+BCCROUTINE_VALID_END:
+    lea         LINE_END,a2
+    jsr         COPY_STRING_A2_TO_A1
+    move.b      #0,(a1)+ * terminate with a null.
+
+BCCROUTINE_END:
+    movem.l     (sp)+,A0/A2-A5/D0-D7
+    rts
+
+* End of BCCROUTINE subroutine
+
 * Variables
 *-----------------------------------------------------------
 * Put variables and constants here
 
-CR          EQU $0D
-LF          EQU $0A
+CR          equ $0D
+LF          equ $0A
 
 BUFFER
  * an input BUFFER
@@ -413,7 +573,19 @@ NOP_OPCODE
     dc.b    'NOP',CR,LF,0
 
 DATA_OPCODE
-    dc.b    'DATA: $',0 * must be null terminated
+    dc.b    'DATA:  $',0 * must be null terminated
+
+BRA_OPCODE
+    dc.b    'BRA    $',0
+
+BLT_OPCODE
+    dc.b    'BLT    $',0
+
+BGE_OPCODE
+    dc.b    'BGE    $',0
+
+BEQ_OPCODE
+    dc.b    'BEQ    $',0
 
 INPUT_START_MESSAGE
     dc.b   'Please Enter Starting Address: ',0
@@ -432,6 +604,7 @@ LINE_END
 
 
     END    START        ; last line of source
+
 
 
 

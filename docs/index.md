@@ -160,6 +160,7 @@ As we go forward in this program, we will find that some code will be used and r
 
 Some op-codes are similar and will have similar code. When we detect that, we will make a utility subroutine for that.
 
+```assembly
 LONG_FROM_STRING:
 *Description:
 *Given a string at a1 and its size at d1.w, returns a hex number at 
@@ -170,11 +171,19 @@ LONG_FROM_STRING:
 
 STRING_FROM_WORD:
 *Description:
-*Given a word at a6, will convert that into a string of hex
+*Given a word at d2.w, will convert that into a string of hex
 *digits pointed to by a1
-*nothing other than a1 will change
-*Input: a1, a6
-*Output: a1
+*nothing other than a1 and the memory it points to will change
+*Input: a1, d2.w
+*Output: a1 and the memory it points to
+
+STRING_FROM_LONG:
+*Description:
+*Given a long at d2.l, will convert that into a string of hex
+*digits pointed to by a1
+*nothing other than a1 and the memory it points to will change
+*Input: a1, d2.l
+*Output: a1 and the memory it points to
 
 COPY_STRING_A2_TO_A1:
 *Description:
@@ -183,3 +192,4 @@ COPY_STRING_A2_TO_A1:
 *a1 and the value it points to will change.
 *Input: a1, a2
 *Output: a1
+```
