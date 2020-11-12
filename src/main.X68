@@ -101,11 +101,21 @@ SKIP_NOPROUTINE:
 
     move.w      (a6),d0
     lsr.w       #6,d0
+    cmp.w       #$013A,d0
+    bne         SKIP_JSRROUTINE
+    jsr         JSRROUTINE
+    bra         MAIN_LOOP_PRINT
+    
+
+SKIP_JSRROUTINE:
+    move.w      (a6),d0
+    lsr.w       #6,d0
     lsr.w       #6,d0
     cmp.b       #6,d0
     bne         SKIP_BCCROUTINE
     jsr         BCCROUTINE
     bra         MAIN_LOOP_PRINT
+
 SKIP_BCCROUTINE:
 
 
@@ -400,6 +410,26 @@ NOPROUTINE:
 
 * End of NOPROUTINE subroutine
 
+JSRROUTINE:
+*Description:
+*Requires a1 to point to buffer.
+*Loads "JSR" into BUFFER and increments a6 by two bytes
+*input: a6
+*Output: a6, the value pointed to by a1
+    movem.l     A0/A2-A5/D0-D7, -(sp)
+    *If needed, could optimize memory by not copying anything except a2
+
+    lea         JSR_OPCODE,a2
+    jsr         COPY_STRING_A2_TO_A1
+    move.b      #0,(a1)+ *terminate the string
+    adda.l      #2,a6
+
+
+    movem.l     (sp)+,A0/A2-A5/D0-D7
+    rts
+
+* End of JSRROUTINE subroutine
+
 DATAROUTINE:
 *Description:
 *Loads "DATA: $" then the hex value of the word at (a6)
@@ -586,6 +616,9 @@ BGE_OPCODE
 
 BEQ_OPCODE
     dc.b    'BEQ    $',0
+
+JSR_OPCODE
+    dc.b    'JSR    $',0
 
 INPUT_START_MESSAGE
     dc.b   'Please Enter Starting Address: ',0
