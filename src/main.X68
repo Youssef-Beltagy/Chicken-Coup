@@ -602,19 +602,19 @@ NOP_OPCODE
     dc.b    'NOP',CR,LF,0
 
 DATA_OPCODE
-    dc.b    'DATA:  $',0 * must be null terminated
+    dc.b    'DATA   $',0 * must be null terminated
 
 BRA_OPCODE
-    dc.b    'BRA    $',0
+    dc.b    'BRA     ',0
 
 BLT_OPCODE
-    dc.b    'BLT    $',0
+    dc.b    'BLT     ',0
 
 BGE_OPCODE
-    dc.b    'BGE    $',0
+    dc.b    'BGE     ',0
 
 BEQ_OPCODE
-    dc.b    'BEQ    $',0
+    dc.b    'BEQ     ',0
 
 RTS_OPCODE
     dc.b    'RTS',CR,LF,0
