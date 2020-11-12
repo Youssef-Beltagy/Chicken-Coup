@@ -12,9 +12,10 @@ START:                  ; first instruction of program
     bra         SKIP_TESTS * don't actually run the tests
 
 
-    * write your opcodes here
+    * write your opcodes 
     bra         BCCROUTINE_END
     nop *
+    rts
     beq         MAIN_LOOP
     bra         START
     beq         MAIN_LOOP_PRINT
@@ -99,6 +100,12 @@ MAIN_LOOP:
     bra         MAIN_LOOP_PRINT
 SKIP_NOPROUTINE:
 
+    cmp.w       #$4E75,(a6)
+    bne         SKIP_RTSROUTINE
+    jsr         RTSROUTINE
+    bra         MAIN_LOOP_PRINT
+
+SKIP_RTSROUTINE:
     move.w      (a6),d0
     lsr.w       #6,d0
     lsr.w       #6,d0
@@ -106,7 +113,9 @@ SKIP_NOPROUTINE:
     bne         SKIP_BCCROUTINE
     jsr         BCCROUTINE
     bra         MAIN_LOOP_PRINT
+
 SKIP_BCCROUTINE:
+
 
 
 *put more op-code subroutine calls here.
@@ -400,6 +409,26 @@ NOPROUTINE:
 
 * End of NOPROUTINE subroutine
 
+RTSROUTINE:
+*Description:
+*Requires a1 to point to buffer.
+*Loads "RTS" into BUFFER and increments a6 by two bytes
+*input: a6
+*Output: a6, the value pointed to by a1
+    movem.l     A0/A2-A5/D0-D7, -(sp)
+    *If needed, could optimize memory by not copying anything except a2
+
+    lea         RTS_OPCODE,a2
+    jsr         COPY_STRING_A2_TO_A1
+    move.b      #0,(a1)+ *terminate the string
+    adda.l      #2,a6
+
+
+    movem.l     (sp)+,A0/A2-A5/D0-D7
+    rts
+
+* End of RTSROUTINE subroutine
+
 DATAROUTINE:
 *Description:
 *Loads "DATA: $" then the hex value of the word at (a6)
@@ -586,6 +615,9 @@ BGE_OPCODE
 
 BEQ_OPCODE
     dc.b    'BEQ    $',0
+
+RTS_OPCODE
+    dc.b    'RTS',CR,LF,0
 
 INPUT_START_MESSAGE
     dc.b   'Please Enter Starting Address: ',0
