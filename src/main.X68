@@ -15,7 +15,6 @@ START:                  ; first instruction of program
     * write your opcodes 
     bra         BCCROUTINE_END
     nop *
-    rts
     beq         MAIN_LOOP
     bra         START
     beq         MAIN_LOOP_PRINT
@@ -24,6 +23,7 @@ START:                  ; first instruction of program
     beq         DATAROUTINE
     bgt         DATAROUTINE
     bge         DATAROUTINE
+    rts
     swap        d0
     adda.l      #1,a0
     add.l       #3,d0
