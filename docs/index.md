@@ -30,13 +30,13 @@ A list of all required tasks.
 ## Effective Addressing Modes:
 
 1. Data Register Direct
-2. Address     Register Direct
-3. Address     Register Indirect
-4. Immediate     Data
-5. Address     Register Indirect with Post incrementing
-6. Address     Register Indirect with Pre decrementing
-7. Absolute     Long Address
-8. Absolute     Word Address
+2. Address Register Direct
+3. Address Register Indirect
+4. Immediate Data
+5. Address Register Indirect with Post incrementing
+6. Address Register Indirect with Pre decrementing
+7. Absolute Long Address
+8. Absolute Word Address
 
 
 

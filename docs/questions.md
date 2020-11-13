@@ -7,6 +7,7 @@ This file is for documenting questions to the professor and their answers.
 - How should we distinguish between ADD and ADDQ? They sometimes have identical signatures.
 - Should we Implement ADDA?
 - How do we load another program in memory? This is a simulator option.
+- Is jmp always 3 words?
 
 
 
