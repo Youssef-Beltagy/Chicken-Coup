@@ -44,7 +44,6 @@ START:                  ; first instruction of program
 
 
 
-
 SKIP_TESTS:
 
     * print the start message
@@ -52,6 +51,7 @@ SKIP_TESTS:
     move.b      #14,d0
     trap        #15
 
+MAIN_GET_USER_INPUT:
     * GET the valid user input or exit the program.
     jsr         INPUT_OR_EXIT
     cmp.l       #-1,d7
@@ -86,10 +86,27 @@ SKIP_TESTS:
 
     *The Main Loop
     movea.l     INPUT_START,a6 * Initialize the loop.
+    move.l      #INITIAL_COUNT,MAIN_LOOP_COUNTER * print INITIAL_COUNT lines at a time.
+
 
 MAIN_LOOP:
     cmp.l       INPUT_END,a6 *test exit condition
-    BGT         EXIT_PROGRAM
+    BGT         MAIN_GET_NEW_ADDRESSES * Should you exit and ask for new addresses?
+
+    move.l      MAIN_LOOP_COUNTER,d2 * Is the screen full and you should wait?
+    cmp.l       #0,d2
+    bne         MAIN_LOOP_DONT_WAIT * the screen is not full.
+
+    jsr         CONTINUE_OR_EXIT * the screen is full.
+    cmp.l       #-1,d7
+    beq         EXIT_PROGRAM
+
+MAIN_LOOP_DONT_WAIT:
+
+    * update the counter.
+    add.l       #-1,MAIN_LOOP_COUNTER
+
+    * load the buffer
     lea         BUFFER,a1
 
     *Inclusive of INPUT_END
@@ -186,6 +203,14 @@ MAIN_LOOP_PRINT:
     trap        #15
     bra         MAIN_LOOP
 
+
+MAIN_GET_NEW_ADDRESSES:
+    lea         MORE_MEMORY_MESSAGE,a1
+    move.b      #14,d0
+    trap        #15
+    bra         MAIN_GET_USER_INPUT
+
+
 EXIT_PROGRAM:
     lea         TERMINATION_MESSAGE,a1
     move.b      #14,d0
@@ -226,7 +251,7 @@ INPUT_OR_EXIT_LOOP:
 
     *program termination value
     cmp.b       #113,(a1) *113 is for 'q'
-    beq         INPUT_OR_EXIT_TERMINATE *return error code
+    beq         INPUT_OR_EXIT_TERMINATE *return exit code
 
     *convert the string into a long
     jsr         LONG_FROM_STRING
@@ -234,8 +259,8 @@ INPUT_OR_EXIT_LOOP:
     beq         INPUT_OR_EXIT_INVALID
 
     *Test that the start address is even
-    btst        #0,d6 *TODO: Possibly print a special message for odd start input.
-    bne         INPUT_OR_EXIT_INVALID 
+    btst        #0,d6
+    bne         INPUT_OR_EXIT_INVALID_ODD 
 
     *copy the input
     move.l      d6,INPUT_START
@@ -260,8 +285,7 @@ INPUT_OR_EXIT_LOOP:
 
     *Check the validity of the addresses
     cmp.l       INPUT_START,d6
-    blt         INPUT_OR_EXIT_INVALID
-    *TODO: Print a unique message when the end address is 
+    blt         INPUT_OR_EXIT_INVALID_GT
     * is smaller than the start address
 
     *set the error flag to 0
@@ -278,12 +302,80 @@ INPUT_OR_EXIT_INVALID:
     trap        #15
     bra         INPUT_OR_EXIT_LOOP
 
+INPUT_OR_EXIT_INVALID_ODD:
+    *prints invalid message for odd start address
+    *and prompts for input again
+    lea         INVALID_MESSAGE_ODD,a1
+    move.b      #14,d0
+    trap        #15
+    bra         INPUT_OR_EXIT_LOOP
+
+INPUT_OR_EXIT_INVALID_GT:
+    *prints invalid message when the start address is greater
+    *than the ending address and prompts for input again.
+    lea         INVALID_MESSAGE_GT,a1
+    move.b      #14,d0
+    trap        #15
+    bra         INPUT_OR_EXIT_LOOP
+
 INPUT_OR_EXIT_TERMINATE:
     move.l      #-1,d7
 INPUT_OR_EXIT_END:
     movem.l     (sp)+,d0-d6/a0-a6
     rts
 * End of INPUT_OR_EXIT
+
+CONTINUE_OR_EXIT:
+*Description:
+*Ensures that MAIN_LOOP_COUNTER is reset or that
+*d7.l = -1 to indicate that the program should terminate.
+*nothing changes other than MAIN_LOOP_COUNTER or d7.l
+*Input: nothing
+*Output: d7.l
+    movem.l     d0/d1/a1,-(sp)
+
+CONTINUE_OR_EXIT_LOOP:
+
+    *get the input
+    lea         BUFFER,a1
+    move.b      #2,d0
+    trap        #15
+
+    *If the size of the string is 0, this was just enter.
+    cmp.w       #0,d1
+    beq         CONTINUE_OR_EXIT_CONTINUE
+
+    cmp.w       #1,d1 * More than one character is invalid input
+    bne         CONTINUE_OR_EXIT_INVALID 
+
+    *program termination value
+    cmp.b       #113,(a1) *113 is for 'q'
+    beq         CONTINUE_OR_EXIT_TERMINATE *return exit code
+
+    * this must have been invalid input by this point.
+    bra         CONTINUE_OR_EXIT_INVALID
+
+
+CONTINUE_OR_EXIT_INVALID:
+    *prints invalid message
+    *and prompts for input again
+    lea         WAIT_INVALID_MESSAGE,a1
+    move.b      #14,d0
+    trap        #15
+    bra         CONTINUE_OR_EXIT_LOOP
+
+
+CONTINUE_OR_EXIT_CONTINUE:
+    move.l      #INITIAL_COUNT,MAIN_LOOP_COUNTER * print INITIAL_COUNT lines at a time.
+    move.l      #0,d7
+    bra         CONTINUE_OR_EXIT_END
+
+CONTINUE_OR_EXIT_TERMINATE:
+    move.l      #-1,d7
+CONTINUE_OR_EXIT_END:
+    movem.l     (sp)+,d0/d1/a1
+    rts
+* End of CONTINUE_OR_EXIT
 
 
 LONG_FROM_STRING:
@@ -1029,12 +1121,15 @@ BCCROUTINE_END:
 *-----------------------------------------------------------
 * Put variables and constants here
 
-CR          equ $0D
-LF          equ $0A
+CR                  equ $0D
+LF                  equ $0A
+INITIAL_COUNT       equ 25
 
 BUFFER
  * an input BUFFER
     ds.b   180 *A BUFFER of 180 bytes
+MAIN_LOOP_COUNTER
+    ds.l    1
 
 INPUT_START
     ds.l    1
@@ -1073,17 +1168,30 @@ ERROR_STRING
     dc.b    'ERROR! ERROR! ERROR!',CR,LF,0
 
 INPUT_START_MESSAGE
-    dc.b   'Please Enter Starting Address: ',0
+    dc.b   'Please enter the starting address (or q to exit): ',0
 
 INPUT_END_MESSAGE
-    dc.b   'Please Enter Ending Address: ',0
+    dc.b   'Please enter the ending address: ',0
+
+MORE_MEMORY_MESSAGE
+    dc.b    'Finished Disassmebling!',CR,LF,CR,LF
+    dc.b    'Do you want to disassemble more?',CR,LF,0
 
 TERMINATION_MESSAGE
     dc.b    'Program Terminated',0
 
 INVALID_MESSAGE
-    dc.b    'Invalid input. Input must be 8-digit hex number',CR,LF,0
-    
+    dc.b    'Invalid input: The input must be 8-digit hex number',CR,LF,0
+
+INVALID_MESSAGE_ODD
+    dc.b    'Invalid input: The start address must be even',CR,LF,0
+
+INVALID_MESSAGE_GT
+    dc.b    'Invalid input: The start address can not be greater than the end address.',CR,LF,0
+
+WAIT_INVALID_MESSAGE
+    dc.b    'Invalid input: press enter or q.'
+
 LINE_END
     dc.b    CR,LF,0
 
@@ -1104,7 +1212,8 @@ PROGRAM_START_MESSAGE
     dc.b    9,9,9,9,'           ',34,' ',34,' ',CR,LF
     dc.b    CR,LF
     dc.b    'A Motorola 68K disassembler.',CR,LF
-    dc.b    'Please input your addresses as 8 hex-digits!',CR,LF,LF,0
+    dc.b    'Please input your addresses as 8 hex-digits!',CR,LF
+    dc.b    'When the program pauses, press enter to continue or q to exit.',CR,LF,LF,0
 
 
     END    START        ; last line of source

@@ -50,16 +50,17 @@ A list of all required tasks.
 6. [ ] MULS
 7. [ ] DIVU -- No longer required
 8. [ ] LEA
-9. [ ] AND
+9. [x] AND
 10. [ ] NOT
 11. [ ] LSL
 12. [ ] LSR -- No longer required
 13. [ ] ASL -- No longer required
 14. [ ] ASR
-15. [ ] Bcc     (BLT, BGE, BEQ)
+15. [x] Bcc     (BLT, BGE, BEQ)
 16. [ ] JSR
-17. [ ] RTS
-18. [ ] BRA
+17. [x] RTS
+18. [x] BRA
+19. [x] DATA as a defualt
 
 
 
@@ -169,6 +170,14 @@ LONG_FROM_STRING:
 *Input: a1, d1.w
 *Output: d7.l, d6.l
 
+STRING_FROM_BYTE:
+*Description:
+*Given a byte at d2.b, will convert that into a string of hex
+*digits pointed to by a1
+*nothing other than a1 and the memory it points to will change
+*Input: a1, d2.b
+*Output: a1 and the memory it points to
+
 STRING_FROM_WORD:
 *Description:
 *Given a word at d2.w, will convert that into a string of hex
@@ -192,4 +201,88 @@ COPY_STRING_A2_TO_A1:
 *a1 and the value it points to will change.
 *Input: a1, a2
 *Output: a1
+
+GET_LIGHT_PURPLE_SIZE:
+*Description:
+*Given an op-code at (a6) that uses
+* the light purple size in http://goldencrystal.free.fr/M68kOpcodes-v2.3.pdf.
+* This subroutine will print the approperiate size (B|W|L) in the value pointed to by a1.
+* If the input is Invalid, prints ERROR_STRING.
+* returns the size in d3.b.
+*Input: a
+*Output: a1, d3.b
+
+GET_A_REG_DIRECT:
+*Description:
+*Given a byte at d2.b, will print "A" then the number of the
+*address register that is specified in d2.b.
+*Assumes the address register number (d2.b) is valid [0,7].
+*nothing other than a1 and the memory it points to will change
+*Input: a1, d2.b
+*Output: a1 and the memory it points to
+
+GET_D_REG_DIRECT:
+*Description:
+*Given a byte at d2.b, will print "D" then the number of the
+*address register that is specified in d2.b.
+*Assumes the data register number (d2.b) is valid [0,7].
+*nothing other than a1 and the memory it points to will change
+*Input: a1, d2.b
+*Output: a1 and the memory it points to
+
+GET_A_REG_INDIRECT:
+*Description:
+*Given a byte at d2.b, will print "(A" then the number of the
+*address register that is specified in d2.b and ")".
+*Assumes the address register number (d2.b) is valid [0,7].
+*nothing other than a1 and the memory it points to will change
+*Input: a1, d2.b
+*Output: a1 and the memory it points to
+
+GET_A_REG_INDIRECT_POST:
+*Description:
+*Given a byte at d2.b, will print "(A" then the number of the
+*address register that is specified in d2.b and ")+".
+*Assumes the address register number (d2.b) is valid [0,7].
+*nothing other than a1 and the memory it points to will change
+*Input: a1, d2.b
+*Output: a1 and the memory it points to
+
+GET_A_REG_INDIRECT_PRE:
+*Description:
+*Given a byte at d2.b, will print "-(A" then the number of the
+*address register that is specified in d2.b and ")".
+*Assumes the address register number (d2.b) is valid [0,7].
+*nothing other than a1 and the memory it points to will change
+*Input: a1, d2.b
+*Output: a1 and the memory it points to
+
+GET_INVALID_ADDRESSING_MODE:
+*Description:
+*Loads "IAM" into the memory pointed to by a1
+*nothing other than a1 and the memory it points to will change
+*Input: a1
+*Output: a1 and the memory it points to
+
+GET_EA: * Get the effective address.
+*Description:
+*Requires d3.b to contain the size of the instruction in case it is immediate.
+*You must set d3.b to a value in the range of [0,2]. 0 for byte. 1 for word. 2 for long.
+*If d3.b contains anything aside from [0,2] and the EA was immediate, ERROR_STRING will be printed.
+*Requires d2.w to contain the instruction.
+*Requires a1 to point to buffer.
+*Requires a6 to point to the next insturction or the memory of
+*the data of this EA.
+*Again, Requires a6 to point to the memory of the data of this EA or the
+*next instruction.
+*By the end of this subroutine, a6 will point to the next
+*instruction.
+*This subroutine is really powerful. But it needs to make a lot
+*of assumptions. It is YOUR responsibility to ensure these
+*prerequisites are correct!
+*It is YOUR responsibility to print anything you need to print before
+*or after GET_EA.
+*Nothing other than a1 and the value it points to will change.
+*input: a6, d2.w, d3.b
+*Output: a6, the value pointed to by a1
 ```

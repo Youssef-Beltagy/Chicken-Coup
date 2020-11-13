@@ -8,6 +8,8 @@ This file is for documenting questions to the professor and their answers.
 - Should we Implement ADDA?
 - How do we load another program in memory? This is a simulator option.
 - Is jmp always 3 words?
+- For immediate EA and absolute EA, should we remove the left side zeros when printing or not?
+- Is it okay that i have a line when I wait for the user to continue or not?
 
 
 
