@@ -1,5 +1,16 @@
 *-----------------------------------------------------------
 * Title      : Disassembler
+* Written by : Youssef Beltagy, Jasdeep
+* Date       : 10/25/2020
+* Description: A 68k Disassembler
+*-----------------------------------------------------------
+
+    ORG    $1000
+START:                  ; first instruction of program
+
+* FIXME: For Testing, DELETE LATER *============================
+*-----------------------------------------------------------
+* Title      : Disassembler
 * Written by : Youssef Beltagy
 * Date       : 10/25/2020
 * Description: A 68k Disassembler
@@ -9,10 +20,35 @@
 START:                  ; first instruction of program
 
 * FIXME: For Testing, DELETE LATER *============================
+    movea.l     #$00008000, a4 
+    move.w      #$4E71, (a4)+       *nop
+    move.w      #$4642, (a4)+       *not dn
+    move.w      #$4654, (a4)+       *not (an)
+    move.w      #$4664, (a4)+       *not -(an)
+    move.w      #$465C, (a4)+       *not (an)+
+    move.w      #$46B9, (a4)+       *not (xxx).l
+    move.l      #$0000A000, (a4)+ 
+
     bra         SKIP_TESTS * don't actually run the tests
+    * write your opcodes here
+    NOT         D2           * 4642
+    NOT.W       (A4)         * 4654
+    NOT.W       (A4)+        * 465C
+    NOT.W       -(A4)        * 4664
+    NOT.L       $0000A000    * 4679 0000A000       
+    ADD.B       D0,D1        * D200
+    ADD.B       D2, $FFFF1234 * D539 FFFF1234
+    ADD.W       D1,D0        * D041
+    ADD.L       $FFFF1234,D1 * D2B9
+    SUB.B       D5,D4        * 9805
+    ASR         $00001234    * E0F81234
+    ASR         (A1)+        
+    ASR         -(A2)
+    ASR.B       #$1,D0
+    ASR.L       #$1,D0
+    LSL         $00001234    * E3F81234
+    LEA         (A4),A5      * 4BD4
 
-
-    * write your opcodes 
     bra         BCCROUTINE_END
     nop *
     beq         MAIN_LOOP
@@ -23,7 +59,6 @@ START:                  ; first instruction of program
     beq         DATAROUTINE
     bgt         DATAROUTINE
     bge         DATAROUTINE
-    rts
     swap        d0
     adda.l      #1,a0
     add.l       #3,d0
@@ -42,9 +77,6 @@ START:                  ; first instruction of program
     nop *
 * FIXME: For Testing, DELETE LATER *============================
 
-
-
-
 SKIP_TESTS:
     jsr         INPUT_OR_EXIT
     cmp.l       #-1,d7
@@ -52,31 +84,29 @@ SKIP_TESTS:
 
 * FIXME: For Testing, DELETE LATER *============================
     *prints the two hex digits
-    move.l      INPUT_START,d1 *
-    move.b      #15,d0 *
-    move.b      #16,d2 *
-    trap        #15 *
-    
-    *starts a new line
-    lea         LINE_END,a1 *
-    move.b      #14,d0 *
-    trap        #15 *
-
-    move.l      INPUT_END,d1 *
-    move.b      #15,d0 *
-    move.b      #16,d2 *
-    trap        #15 * 
-
-    *starts a new line
-    lea         LINE_END,a1 *
-    move.b      #14,d0 *
-    trap        #15 *
+    *move.l      INPUT_START,d1 *
+    *move.b      #15,d0 *
+    *move.b      #16,d2 *
+    *trap        #15 *
+    *
+    **starts a new line
+    *lea         LINE_END,a1 *
+    *move.b      #14,d0 *
+    *trap        #15 *
+*
+    *move.l      INPUT_END,d1 *
+    *move.b      #15,d0 *
+    *move.b      #16,d2 *
+    *trap        #15 * 
+*
+    **starts a new line
+    *lea         LINE_END,a1 *
+    *move.b      #14,d0 *
+    *trap        #15 *
 
 * FIXME: For Testing, DELETE LATER *============================
 
-
 *TODO: IMPlement a subroutine for the loop if necessary
-
     *The Main Loop
     movea.l     INPUT_START,a6
 
@@ -93,13 +123,12 @@ MAIN_LOOP:
     jsr         STRING_FROM_LONG
     move.b      #9,(a1)+ * print a tab.
 
-
     cmp.w       #$4E71,(a6)
     bne         SKIP_NOPROUTINE
     jsr         NOPROUTINE
     bra         MAIN_LOOP_PRINT
-SKIP_NOPROUTINE:
 
+SKIP_NOPROUTINE:
     cmp.w       #$4E75,(a6)
     bne         SKIP_RTSROUTINE
     jsr         RTSROUTINE
@@ -109,20 +138,29 @@ SKIP_RTSROUTINE:
     move.w      (a6),d0
     lsr.w       #6,d0
     lsr.w       #6,d0
-    cmp.b       #6,d0
+    cmp.b       #4, d0
+    bne         SKIP_NOTROUTINE
+    jsr         NOTROUTINE
+    bra         MAIN_LOOP_PRINT  
+
+
+SKIP_NOTROUTINE 
+    cmp.b       #6, d0
     bne         SKIP_BCCROUTINE
     jsr         BCCROUTINE
     bra         MAIN_LOOP_PRINT
 
 SKIP_BCCROUTINE:
-
-
-
 *put more op-code subroutine calls here.
 *Just like NOPROUTINE
-
 * the default subroutine if no other routines are called is
 * the data ROUTINE
+    jsr         DATAROUTINE
+
+SKIP_CURRENT_ROUTINE
+* when an error is detected in a middle of a opcode routine skip 
+* to dataroutine
+    movem.l     (sp)+,A0/A2-A5/D0-D7
     jsr         DATAROUTINE
 
 MAIN_LOOP_PRINT:
@@ -407,8 +445,6 @@ NOPROUTINE:
     movem.l     (sp)+,A0/A2-A5/D0-D7
     rts
 
-* End of NOPROUTINE subroutine
-
 RTSROUTINE:
 *Description:
 *Requires a1 to point to buffer.
@@ -428,6 +464,22 @@ RTSROUTINE:
     rts
 
 * End of RTSROUTINE subroutine
+
+NOTROUTINE
+    movem.l     A0/A2-A5/D0-D7, -(sp)
+    move.w      (a6), d7
+    lea         NOT_OPCODE,a2
+    jsr         COPY_STRING_A2_TO_A1
+
+    jsr         GET_SIZE
+    adda.l      #2,a6
+    jsr         SOURCE_JUMP
+
+    lea         LINE_END,a2
+    jsr         COPY_STRING_A2_TO_A1
+    move.b      #0,(a1)+ * terminate with a null.
+    movem.l     (sp)+,A0/A2-A5/D0-D7
+    rts
 
 DATAROUTINE:
 *Description:
@@ -597,9 +649,57 @@ INPUT_START
 
 INPUT_END
     ds.l    1
+               
+Str_Byte            dc.w    '.B ', 0
+Str_Word            dc.w    '.W ', 0
+Str_Long            dc.w    '.L ', 0
+Str_Space           dc.w    ' ', 0
+Str_0               dc.w    '0', 0
+Str_1               dc.w    '1', 0
+Str_2               dc.w    '2', 0
+Str_3               dc.w    '3', 0
+Str_4               dc.w    '4', 0
+Str_5               dc.w    '5', 0
+Str_6               dc.w    '6', 0
+Str_7               dc.w    '7', 0
+Str_8               dc.w    '8', 0
+Str_9               dc.w    '9', 0
+
+Str_Open_Brack      dc.w    '(', 0  
+Str_Close_Brack     dc.w    ')', 0  
+Str_Slash           dc.w    '/', 0  
+Str_Plus            dc.w    '+', 0  
+Str_Minus           dc.w    '-', 0  
+Str_Data_Reg        dc.w    'D', 0  
+Str_Addr_Reg        dc.w    'A', 0  
+Str_Comma           dc.w    ', ', 0  
+Str_Bin             dc.w    '%', 0  
+Str_Hex             dc.w    '$', 0  
+Str_Hashtag         dc.w    '#', 0  
 
 NOP_OPCODE
     dc.b    'NOP',CR,LF,0
+
+RTS_OPCODE
+    dc.b    'RTS',CR,LF,0
+
+LEA_OPCODE
+    dc.b    'LEA:   $',0
+
+ADD_OPCODE
+    dc.b    'ADD',0
+
+SUB_OPCODE
+    dc.b    'SUB',0
+
+LSL_OPCODE
+    dc.b    'LSL',0
+
+NOT_OPCODE
+    dc.b    'NOT',0
+
+ASR_OPCODE
+    dc.b    'ASR',0     
 
 DATA_OPCODE
     dc.b    'DATA:  $',0 * must be null terminated
@@ -616,9 +716,6 @@ BGE_OPCODE
 BEQ_OPCODE
     dc.b    'BEQ    $',0
 
-RTS_OPCODE
-    dc.b    'RTS',CR,LF,0
-
 INPUT_START_MESSAGE
     dc.b   'Please Enter Starting Address: ',0
 
@@ -634,19 +731,415 @@ INVALID_MESSAGE
 LINE_END
     dc.b    CR,LF,0
 
+Check_Count_Or_Register
+    JSR     B5
+    CMP.B   #$0, D6
+    BEQ     Shift_Count
+    CMP.B   #$1, D6
+    BEQ     Shift_Register
+    BNE     SKIP_CURRENT_ROUTINE
 
+Shift_Register
+    move.w  #$0000, d5
+    JSR     Print_Dn
+    RTS
+
+Shift_Count
+    lea     Str_Hashtag,a2
+    jsr     COPY_STRING_A2_TO_A1
+    lea     Str_Hex,a2
+    jsr     COPY_STRING_A2_TO_A1
+    JSR     B11_TO_B9
+    move.w  d6,d2
+    jsr     STRING_FROM_WORD
+    RTS
+
+Print_ASRr
+    lea     ASR_OPCODE,a2
+    jsr     COPY_STRING_A2_TO_A1
+    JSR     Get_Size_For_LSL_ASR
+    JSR     Check_Count_Or_Register
+    lea     Str_Comma,a2
+    jsr     COPY_STRING_A2_TO_A1
+    lea     Str_Space,a2
+    jsr     COPY_STRING_A2_TO_A1
+    move.w  #$1111, d5
+    JSR     Print_Dn
+    lea     LINE_END,a2
+    jsr     COPY_STRING_A2_TO_A1
+    move.b  #0,(a1)+ * terminate with a null.
+    movem.l (sp)+,A0/A2-A5/D0-D7
+    bra     MAIN_LOOP_PRINT
+
+Get_Size_For_LSL_ASR
+    JSR     B7_TO_B6
+    CMP.B   #$0, D6
+    BEQ     Print_Size_Byte
+    CMP.B   #$1, D6
+    BEQ     Print_Size_Word
+    CMP.B   #$2, D6
+    BEQ     Print_Size_Long
+    BNE     SKIP_CURRENT_ROUTINE
+
+* Get the size for opcodes
+GET_SIZE
+    JSR         B8_TO_B6
+    CMP.B       #$0, D6
+    BEQ         Print_Size_Byte
+    CMP.B       #$1, D6
+    BEQ         Print_Size_Word
+    CMP.B       #$2, D6
+    BEQ         Print_Size_Long
+    CMP.B       #$4, D6
+    BEQ         Print_Size_Byte
+    CMP.B       #$5, D6
+    BEQ         Print_Size_Word
+    CMP.B       #$6, D6
+    BEQ         Print_Size_Long
+    BNE         SKIP_CURRENT_ROUTINE
+
+* Put the size into the output string
+Print_Size_Byte
+    lea         Str_Byte,a2
+    jsr         COPY_STRING_A2_TO_A1
+    rts
+
+Print_Size_Word
+    lea         Str_Word,a2
+    jsr         COPY_STRING_A2_TO_A1
+    rts
+
+Print_Size_Long
+    lea         Str_Long,a2
+    jsr         COPY_STRING_A2_TO_A1
+    rts
+
+* Check opmode for add, sub
+Check_Opmode
+    JSR     B8   
+    CMP.B   #$0, D6
+    BEQ     EffectiveAddress_To_Destination
+    CMP.B   #$1, D6
+    BEQ     Destination_To_EffectiveAddress
+
+*   1101    000 001 000 001
+EffectiveAddress_To_Destination
+    JSR     SOURCE_JUMP
+    lea     Str_Comma, a2
+    jsr     COPY_STRING_A2_TO_A1
+    lea     Str_Space, a2
+    jsr     COPY_STRING_A2_TO_A1
+    move.w  #$0000, d5
+    JSR     Print_Dn
+    RTS
+
+Destination_To_EffectiveAddress
+    move.w  #$0000, d5
+    JSR     Print_Dn
+    lea     Str_Comma, a2
+    jsr     COPY_STRING_A2_TO_A1
+    lea     Str_Space, a2
+    jsr     COPY_STRING_A2_TO_A1
+    JSR     SOURCE_JUMP
+    RTS
+
+DESTINATION_JUMP
+    move.w  #$0000, d5
+    JSR     B8_TO_B6
+    bra     DEST_AND_SOURCE
+    
+SOURCE_JUMP
+    move.w  #$1111, d5
+    JSR     B5_TO_B3
+    bra     DEST_AND_SOURCE
+
+DEST_AND_SOURCE
+    CMP.B   #$0, D6
+    BEQ     Print_Dn
+    CMP.B   #$1, D6
+    BEQ     Print_An
+    CMP.B   #$2, D6
+    BEQ     Print_Indr_An
+    CMP.B   #$3, D6
+    BEQ     Print_Indr_Plus_An
+    CMP.B   #$4, D6
+    BEQ     Print_Indr_Minus_An
+    CMP.B   #$7, D6
+    BEQ     Print_MemAddr
+
+* Put 'D' into the output string
+Print_Dn
+    lea     Str_Data_Reg, a2
+    jsr     COPY_STRING_A2_TO_A1
+    jsr     Find_DEST_or_SRC
+    rts
+
+* Put 'A' into the output string
+Print_An
+    lea     Str_Addr_Reg, a2
+    jsr     COPY_STRING_A2_TO_A1
+    jsr     Find_DEST_or_SRC
+    RTS
+
+* Put '(An)' into the output string
+Print_Indr_An
+    lea     Str_Open_Brack, a2
+    jsr     COPY_STRING_A2_TO_A1
+    lea     Str_Addr_Reg, a2
+    jsr     COPY_STRING_A2_TO_A1
+    jsr     Find_DEST_or_SRC
+    lea     Str_Close_Brack, a2
+    jsr     COPY_STRING_A2_TO_A1
+    RTS
+
+* Put '(An)+' into the output string
+Print_Indr_Plus_An
+    lea     Str_Open_Brack, a2
+    jsr     COPY_STRING_A2_TO_A1
+    lea     Str_Addr_Reg, a2
+    jsr     COPY_STRING_A2_TO_A1
+    jsr     Find_DEST_or_SRC
+    lea     Str_Close_Brack, a2
+    jsr     COPY_STRING_A2_TO_A1
+    lea     Str_Plus, a2
+    jsr     COPY_STRING_A2_TO_A1
+    RTS
+
+* Put '-(An)' into the output string
+Print_Indr_Minus_An
+    lea     Str_Minus, a2
+    jsr     COPY_STRING_A2_TO_A1
+    lea     Str_Open_Brack, a2
+    jsr     COPY_STRING_A2_TO_A1
+    lea     Str_Addr_Reg, a2
+    jsr     COPY_STRING_A2_TO_A1
+    jsr     Find_DEST_or_SRC
+    lea     Str_Close_Brack, a2
+    jsr     COPY_STRING_A2_TO_A1
+    RTS   
+
+* Put the register number into the output string
+Find_DEST_or_SRC
+    cmp     #$0000, d5
+    beq     Find_DR
+    cmp     #$1111, d5
+    beq     Find_SR
+
+Find_DR
+    JSR     B11_TO_B9
+    bra     Print_Num
+
+Find_SR
+    JSR     B2_TO_B0
+    bra     Print_Num
+
+* Find and put the memory address into the output string
+Print_MemAddr
+    cmp     #$0000, d5
+    beq     Print_MemAddr_DEST
+    cmp     #$1111, d5
+    beq     Print_MemAddr_SRC
+
+Print_MemAddr_DEST
+    jsr     B11_TO_B9
+    bra     Find_Mem_Addr_Size
+
+Print_MemAddr_SRC
+    JSR     B2_TO_B0
+    bra     Find_Mem_Addr_Size
+
+Find_Mem_Addr_Size
+    CMP.B   #$0, D6
+    BEQ     Mem_Word
+    CMP.B   #$1, D6
+    BEQ     Mem_Long
+    CMP.B   #$4, D6
+    BEQ     Immedi_Data
+
+Mem_Word
+    lea     Str_Hex,a2
+    jsr     COPY_STRING_A2_TO_A1
+    JSR     Immedi_Data_Word
+    rts
+    
+Mem_Long
+    lea     Str_Hex,a2
+    jsr     COPY_STRING_A2_TO_A1
+    JSR     Immedi_Data_Long
+    rts
+
+Immedi_Data_Word
+    move.w      (a6)+,d2
+    jsr         STRING_FROM_WORD     
+    rts
+
+Immedi_Data_Long
+    move.l      (a6)+,d2
+    jsr         STRING_FROM_LONG
+    rts
+
+* Find and put the immediate data into the output string
+Immedi_Data
+    lea     Str_Hashtag, a2
+    jsr     COPY_STRING_A2_TO_A1
+    lea     Str_Hex, a2
+    jsr     COPY_STRING_A2_TO_A1
+    bra     Size_Arthm
+
+Size_Arthm
+    JSR     B7_TO_B6
+    CMP.B   #$1, D6       * if equal to 3 that mean its Byte because 01 is 1 in hex
+    BEQ     Immedi_Data_Word
+    CMP.B   #$3, D6       * if equal to 3 that mean its Word because 11 is 3 in hex
+    BEQ     Immedi_Data_Word
+    CMP.B   #$2, D6       * if equal to 3 that mean its Long because 10 is 2 in hex
+    BEQ     Immedi_Data_Long
+
+* Utilities for adding numbers to the output string
+Print_Num
+    CMP.B   #$0, D6
+    BEQ     Print_0
+    CMP.B   #$1, D6
+    BEQ     Print_1
+    CMP.B   #$2, D6
+    BEQ     Print_2
+    CMP.B   #$3, D6
+    BEQ     Print_3
+    CMP.B   #$4, D6
+    BEQ     Print_4
+    CMP.B   #$5, D6
+    BEQ     Print_5
+    CMP.B   #$6, D6
+    BEQ     Print_6
+    CMP.B   #$7, D6
+    BEQ     Print_7
+
+Print_0
+    lea     Str_0, a2
+    jsr     COPY_STRING_A2_TO_A1
+    rts
+Print_1 
+    lea     Str_1, a2
+    jsr     COPY_STRING_A2_TO_A1
+    rts 
+Print_2 
+    lea     Str_2, a2
+    jsr     COPY_STRING_A2_TO_A1
+    rts 
+Print_3 
+    lea     Str_3, a2
+    jsr     COPY_STRING_A2_TO_A1
+    rts 
+Print_4 
+    lea     Str_4, a2
+    jsr     COPY_STRING_A2_TO_A1
+    rts 
+Print_5 
+    lea     Str_5, a2
+    jsr     COPY_STRING_A2_TO_A1
+    rts 
+Print_6 
+    lea     Str_6, a2
+    jsr     COPY_STRING_A2_TO_A1
+    rts 
+Print_7 
+    lea     Str_7, a2
+    jsr     COPY_STRING_A2_TO_A1
+    rts
+   
+B15_TO_B8
+    MOVEM.L D7, -(SP)
+    LSR.W   #8, D7
+    MOVE.B  D7, D6
+    MOVEM.L (SP)+, D7
+    RTS  
+B4_TO_B3
+    MOVEM.L D7, -(SP)
+    LSL.W   #8, D7
+    LSL.W   #3, D7
+    LSR.W   #8, D7
+    LSR.W   #6, D7
+    MOVE.B  D7, D6
+    MOVEM.L (SP)+, D7
+    rts
+First_Nibble
+    MOVEM.L D7, -(SP)
+    LSR.W   #8, D7
+    LSR.W   #4, D7
+    MOVE.B  D7, D6
+    MOVEM.L (SP)+, D7
+    rts
+B7_TO_B6
+    MOVEM.L D7, -(SP)
+    LSL.W   #8, D7
+    LSR.W   #8, D7
+    LSR.W   #6, D7
+    MOVE.B  D7, D6
+    MOVEM.L (SP)+, D7
+    rts    
+
+B8_TO_B6
+    MOVEM.L D7, -(SP)
+    LSL.W   #7, D7
+    LSR.W   #8, D7
+    LSR.W   #5, D7
+    MOVE.B  D7, D6
+    MOVEM.L (SP)+, D7
+    rts
+
+B8    
+    MOVEM.L D7, -(SP)
+    LSL.W   #7, D7
+    LSR.W   #8, D7
+    LSR.W   #7, D7
+    MOVE.B  D7, D6
+    MOVEM.L (SP)+, D7
+    rts
+
+B5_TO_B3
+    MOVEM.L D7, -(SP)
+    LSL.W   #8, D7
+    LSL.W   #2, D7
+    LSR.W   #8, D7
+    LSR.W   #5, D7
+    MOVE.B  D7, D6
+    MOVEM.L (SP)+, D7
+    rts
+
+B11_TO_B9 * destination register
+    MOVEM.L D7, -(SP)
+    LSL.W   #4, D7
+    LSR.W   #8, D7
+    LSR.W   #5, D7
+    MOVE.B  D7, D6
+    MOVEM.L (SP)+, D7
+    rts
+B2_TO_B0 * source register
+    MOVEM.L D7, -(SP)
+    LSL.W   #8, D7
+    LSL.W   #5, D7
+    LSR.W   #8, D7
+    LSR.W   #5, D7
+    MOVE.B  D7, D6
+    MOVEM.L (SP)+, D7
+    rts
+
+B11_TO_B6
+    MOVEM.L D7, -(SP)
+    LSL.W   #4, D7
+    LSR.W   #8, D7
+    LSR.W   #2, D7
+    MOVE.B  D7, D6
+    MOVEM.L (SP)+, D7
+    rts
+B5
+    MOVEM.L D7, -(SP)
+    LSL.W   #8, D7
+    LSL.W   #2, D7
+    LSR.W   #8, D7
+    LSR.W   #7, D7
+    MOVE.B  D7, D6
+    MOVEM.L (SP)+, D7
+    RTS
     END    START        ; last line of source
 
-
-
-
-
-
-
-
-
-
-*~Font name~Courier New~
-*~Font size~10~
-*~Tab type~1~
-*~Tab size~4~
