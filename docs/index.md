@@ -170,6 +170,14 @@ LONG_FROM_STRING:
 *Input: a1, d1.w
 *Output: d7.l, d6.l
 
+STRING_FROM_NIBBLE:
+*Description:
+*Given the lower nibble at d1.b, will convert that into a char in the
+*memory pointed to by a1.
+*nothing other than a1 and the memory it points to will change
+*Input: a1, d1.b
+*Output: a1 and the memory it points to
+
 STRING_FROM_BYTE:
 *Description:
 *Given a byte at d2.b, will convert that into a string of hex
@@ -208,9 +216,9 @@ GET_LIGHT_PURPLE_SIZE:
 * the light purple size in http://goldencrystal.free.fr/M68kOpcodes-v2.3.pdf.
 * This subroutine will print the approperiate size (B|W|L) in the value pointed to by a1.
 * If the input is Invalid, prints ERROR_STRING.
-* returns the size in d3.b.
-*Input: a
-*Output: a1, d3.b
+* returns the TEMP_VARIABLE.b.
+*Input: a6
+*Output: a1, TEMP_VARIABLE.b
 
 GET_A_REG_DIRECT:
 *Description:

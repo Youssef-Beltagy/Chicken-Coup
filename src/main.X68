@@ -116,7 +116,7 @@ MAIN_LOOP_DONT_WAIT:
     * print the address of the instruction
     move.l      a6,d2
     jsr         STRING_FROM_LONG
-    move.b      #9,(a1)+ * print a tab.
+    move.b      #TAB,(a1)+ * print a tab.
 
 
     * Is this NOP?
@@ -451,6 +451,32 @@ LONG_FROM_STRING_END:
     rts
 * End of LONG_FROM_STRING subroutine
 
+STRING_FROM_NIBBLE:
+*Description:
+*Given the lower nibble at d1.b, will convert that into a char in the
+*memory pointed to by a1.
+*nothing other than a1 and the memory it points to will change
+*Input: a1, d1.b
+*Output: a1 and the memory it points to
+    movem.l     d1,-(sp)
+
+    and.b       #$0f,d1 *get rid of extra bits.
+
+    cmp.b       #9,d1
+    bgt         STRING_FROM_NIBBLE_CHAR * is this byte A-F
+    add.b       #48,d1 * this byte is 0-9
+    move.b      d1,(a1)+
+    bra         STRING_FROM_NIBBLE_END
+
+STRING_FROM_NIBBLE_CHAR: *this byte is A-F
+    add.b       #55,d1
+    move.b      d1,(a1)+
+
+STRING_FROM_NIBBLE_END:
+    movem.l     (sp)+,d1
+    rts
+* End of STRING_FROM_NIBBLE
+
 STRING_FROM_BYTE:
 *Description:
 *Given a byte at d2.b, will convert that into a string of hex
@@ -473,15 +499,7 @@ STRING_FROM_BYTE_LOOP:
 
     add.b       #4,d0  * Next time, shift to the lift 4 more bits
 
-    cmp.b       #9,d1
-    bgt         STRING_FROM_BYTE_CHAR * is this byte A-F
-    add.b       #48,d1 * this byte is 0-9
-    move.b      d1,(a1)+
-    bra         STRING_FROM_BYTE_LOOP
-
-STRING_FROM_BYTE_CHAR: *this byte is A-F
-    add.b       #55,d1
-    move.b      d1,(a1)+
+    jsr         STRING_FROM_NIBBLE
     bra         STRING_FROM_BYTE_LOOP
 
 STRING_FROM_BYTE_END:
@@ -512,15 +530,7 @@ STRING_FROM_WORD_LOOP:
 
     add.b       #4,d0  * Next time, shift to the lift 4 more bits
 
-    cmp.b       #9,d1
-    bgt         STRING_FROM_WORD_CHAR * is this byte A-F
-    add.b       #48,d1 * this byte is 0-9
-    move.b      d1,(a1)+
-    bra         STRING_FROM_WORD_LOOP
-
-STRING_FROM_WORD_CHAR: *this byte is A-F
-    add.b       #55,d1
-    move.b      d1,(a1)+
+    jsr         STRING_FROM_NIBBLE
     bra         STRING_FROM_WORD_LOOP
 
 STRING_FROM_WORD_END:
@@ -572,9 +582,9 @@ GET_LIGHT_PURPLE_SIZE:
 * the light purple size in http://goldencrystal.free.fr/M68kOpcodes-v2.3.pdf.
 * This subroutine will print the approperiate size (B|W|L) in the value pointed to by a1.
 * If the input is Invalid, prints ERROR_STRING.
-* returns the size in d3.b.
-*Input: a
-*Output: a1, d3.b
+* returns the TEMP_VARIABLE.b.
+*Input: a6
+*Output: a1, TEMP_VARIABLE.b
     movem.l     d0/a2,-(sp)
 
     move.w      (a6),d0 * get the bits at the 6th and 7th index (0-indexing)
@@ -583,7 +593,7 @@ GET_LIGHT_PURPLE_SIZE:
     lsr.w       #7,d0
     lsr.w       #7,d0
 
-    move.b      d0,d3 * return the size in d3.b
+    move.b      d0,TEMP_VARIABLE * return the size TEMP_VARIABLE.b
 
     cmp.b       #0,d0
     beq         GET_LIGHT_PURPLE_SIZE_BYTE
@@ -868,10 +878,12 @@ ANDROUTINE:
     lea         AND_OPCODE,a2
     jsr         COPY_STRING_A2_TO_A1 *Copy "DATA: $" into a1
 
-    jsr         GET_LIGHT_PURPLE_SIZE * prints the size and sets d3.b. Don't touch d3.b
+    jsr         GET_LIGHT_PURPLE_SIZE * prints the size and sets TEMP_VARIABLE.b.
+    move.b      TEMP_VARIABLE,d3 * set d3.b for future use. Don't use it from now on.
 
-    move.b      #32,(a1)+ * Leave some spaces to print beautifully.
-    move.b      #32,(a1)+
+
+    move.b      #SPC,(a1)+ * Leave some spaces to print beautifully.
+    move.b      #SPC,(a1)+
 
     move.w      (a6)+,d2 * make d2.w contain the instruction and increment a6
 
@@ -1124,6 +1136,8 @@ BCCROUTINE_END:
 CR                  equ $0D
 LF                  equ $0A
 INITIAL_COUNT       equ 25
+SPC                 equ 32
+TAB                 equ 9
 
 BUFFER
  * an input BUFFER
@@ -1135,6 +1149,9 @@ INPUT_START
     ds.l    1
 
 INPUT_END
+    ds.l    1
+
+TEMP_VARIABLE
     ds.l    1
 
 NOP_OPCODE
@@ -1202,14 +1219,14 @@ PROGRAM_START_MESSAGE
     dc.b    '/ /___| | | | | (__|   <  __/ | | | / /__| (_) | |_| | |_) /\_/  ',CR,LF
     dc.b    '\____/|_| |_|_|\___|_|\_\___|_| |_| \____/\___/ \__,_| .__/\/    ',CR,LF
     dc.b    '                                                     |_|         ',CR,LF
-    dc.b    9,9,9,9,'           __// ',CR,LF
-    dc.b    9,9,9,9,'          /.__.\',CR,LF
-    dc.b    9,9,9,9,'          \ \/ /',CR,LF
-    dc.b    9,9,9,9,'      ',39,'___/    \',CR,LF
-    dc.b    9,9,9,9,'       \-      )',CR,LF
-    dc.b    9,9,9,9,'        \_____/',CR,LF
-    dc.b    9,9,9,9,'     _____|_|____',CR,LF
-    dc.b    9,9,9,9,'           ',34,' ',34,' ',CR,LF
+    dc.b    TAB,TAB,TAB,TAB,'           __// ',CR,LF
+    dc.b    TAB,TAB,TAB,TAB,'          /.__.\',CR,LF
+    dc.b    TAB,TAB,TAB,TAB,'          \ \/ /',CR,LF
+    dc.b    TAB,TAB,TAB,TAB,'      ',39,'___/    \',CR,LF
+    dc.b    TAB,TAB,TAB,TAB,'       \-      )',CR,LF
+    dc.b    TAB,TAB,TAB,TAB,'        \_____/',CR,LF
+    dc.b    TAB,TAB,TAB,TAB,'     _____|_|____',CR,LF
+    dc.b    TAB,TAB,TAB,TAB,'           ',34,' ',34,' ',CR,LF
     dc.b    CR,LF
     dc.b    'A Motorola 68K disassembler.',CR,LF
     dc.b    'Please input your addresses as 8 hex-digits!',CR,LF
@@ -1217,6 +1234,7 @@ PROGRAM_START_MESSAGE
 
 
     END    START        ; last line of source
+
 
 
 
