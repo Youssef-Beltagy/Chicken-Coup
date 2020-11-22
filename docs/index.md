@@ -52,10 +52,10 @@ A list of all required tasks.
 8. [x] LEA
 9. [x] AND
 10. [x] NOT
-11. [ ] LSL
+11. [x] LSL
 12. [ ] LSR -- No longer required
 13. [ ] ASL -- No longer required
-14. [ ] ASR
+14. [xs] ASR
 15. [x] Bcc     (BLT, BGE, BEQ)
 16. [x] JSR
 17. [x] RTS

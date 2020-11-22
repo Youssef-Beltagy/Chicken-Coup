@@ -14,6 +14,46 @@ START:                  ; first instruction of program
     jmp         START
     jsr         SKIP_TESTS
 
+    asr         (a0)
+    asr         (a1)+
+    asr         -(a2)
+    asr         $ab
+    asr         $fd20
+    asr         (0,a3)
+    asr         (2,a4,d0)
+    asr.b       #1,d1
+    asr.w       #2,d2
+    asr.l       #3,d3
+    asr.b       #4,d4
+    asr.w       #5,d5
+    asr.l       #6,d6
+    asr.b       #7,d7
+    asr.w       #8,d0
+    asr.l       d0,d0
+    asr.b       d1,d0
+    asr.w       d2,d0
+    asr.l       d4,d0
+
+    asl         (a0)
+    asl         (a1)+
+    asl         -(a2)
+    asl         $ab
+    asl         $fd20
+    asl         (0,a3)
+    asl         (2,a4,d0)
+    asl.b       #1,d1
+    asl.w       #2,d2
+    asl.l       #3,d3
+    asl.b       #4,d4
+    asl.w       #5,d5
+    asl.l       #6,d6
+    asl.b       #7,d7
+    asl.w       #8,d0
+    asl.l       d0,d0
+    asl.b       d1,d0
+    asl.w       d2,d0
+    asl.l       d4,d0
+
     lsl         (a0)
     lsl         (a1)+
     lsl         -(a2)
@@ -382,6 +422,45 @@ CONTINUE_LSLROUTINE:
     jsr         LSLROUTINE
     bra         MAIN_LOOP_PRINT
 SKIP_LSLROUTINE:
+
+
+*Is this ASR
+    move.w      (a6),d0
+    lsr.w       #6,d0
+    cmp.w       #$383,d0
+    bne         CONTINUE_ASRROUTINE
+    jsr         ASRROUTINE
+    bra         MAIN_LOOP_PRINT
+CONTINUE_ASRROUTINE:
+
+    * test the first nibble
+    move.w      (a6),d0
+    lsr.w       #6,d0
+    lsr.w       #6,d0
+    cmp.w       #$e,d0
+    bne         SKIP_ASRROUTINE
+
+    * test the size.
+    move.w      (a6),d0
+    lsr.w       #6,d0
+    and.w       #3,d0
+    cmp.w       #3,d0
+    beq         SKIP_ASRROUTINE
+
+    * test the direction
+    move.w      (a6),d0
+    btst        #8,d0
+    bne         SKIP_ASRROUTINE * if the direction is 1 (ASL), skip
+
+    * Is this ASR or nother shift left?
+    lsr.w       #3,d0
+    and.w       #3,d0
+    cmp.w       #0,d0
+    bne         SKIP_ASRROUTINE
+
+    jsr         ASRROUTINE
+    bra         MAIN_LOOP_PRINT
+SKIP_ASRROUTINE:
 
     
 
@@ -1464,7 +1543,7 @@ LSLROUTINE_IMMEDIATE:
     add.w       #48,d2 * '0' to get values in range [1,8].
     move.b      d2,(a1)+
 
-    bra         LSL_ROUTINE_D
+    bra         LSLROUTINE_D
 
 LSLROUTINE_MAKE8:
     add.b       #8,d2
@@ -1475,7 +1554,7 @@ LSLROUTINE_REGISTER: * The source is a data register.
     jsr         GET_D_REG_DIRECT
 
 
-LSL_ROUTINE_D: * the destination is a data register
+LSLROUTINE_D: * the destination is a data register
     move.b      #COMMA,(a1)+
 
     move.w      (a6),d2
@@ -1520,6 +1599,113 @@ LSLROUTINE_END:
     rts
 
 * End of LSLROUTINE subroutine
+
+ASRROUTINE:
+*Description:
+*Requires a1 to point to buffer.
+*Loads "ASR" into BUFFER and handles its size and EA.
+*If the EA is invalid, calls DATAROUTINE.
+*input: a6
+*Output: a6, a1, the value pointed to by a1
+    movem.l     A0/A2-A5/D0-D7, -(sp)
+    *could optimize by not copying anything except a2, d0, d7, d2, and d3
+
+    * test the size.
+    move.w      (a6),d0
+    lsr.w       #6,d0
+    and.w       #3,d0
+    cmp.w       #3,d0
+    beq         ASRROUTINE_EA * This is ASR for an ea.
+
+
+    * This is ASR for data registers
+    lea         ASR_OPCODE,a2
+    jsr         COPY_STRING_A2_TO_A1
+
+    *Print the size.
+    move.b      #PERIOD,(a1)+
+
+    * Get the size in TEMP_VARIABLE
+    jsr         GET_LIGHT_PURPLE_SIZE
+
+    move.b      #SPC,(a1)+ * Leave some spaces to print beautifully.
+    move.b      #SPC,(a1)+
+
+    * Get the register/count
+    move.w      (a6),d2
+    lsr.w       #4,d2
+    lsr.w       #5,d2
+    and.w       #7,d2
+
+    move.w      (a6),d0
+    btst        #5,d0
+    bne         ASRROUTINE_REGISTER * If the sixth bit is 1, then ASR uses a register.
+
+    * ASR uses Immediate data.
+    cmp.b       #0,d2
+    beq         ASRROUTINE_MAKE8
+
+ASRROUTINE_IMMEDIATE:
+    move.b      #35,(a1)+ * print #
+    add.w       #48,d2 * '0' to get values in range [1,8].
+    move.b      d2,(a1)+
+
+    bra         ASRROUTINE_D
+
+ASRROUTINE_MAKE8:
+    add.b       #8,d2
+    bra         ASRROUTINE_IMMEDIATE    
+
+
+ASRROUTINE_REGISTER: * The source is a data register.
+    jsr         GET_D_REG_DIRECT
+
+
+ASRROUTINE_D: * the destination is a data register
+    move.b      #COMMA,(a1)+
+
+    move.w      (a6),d2
+    and.w       #7,d2
+
+    jsr         GET_D_REG_DIRECT
+    adda.l      #2,a6   * increment a6
+    bra         ASRROUTINE_END_LINE
+
+
+ASRROUTINE_EA: * This is ASR for an ea destination.
+    jsr         IS_EA_VALID
+    cmp.l       #-1,d7
+    beq         ASRROUTINE_END
+
+    lea         ASR_OPCODE,a2
+    jsr         COPY_STRING_A2_TO_A1
+
+    *Print 4 spaces for beauty.
+    move.b      #SPC,(a1)+
+    move.b      #SPC,(a1)+
+    move.b      #SPC,(a1)+
+    move.b      #SPC,(a1)+
+
+    *prepare to call GET_EA
+    move.w      (a6)+,d2
+    move.b      #1,d3 * word size. FIXME: Unnecessary. Delete
+
+    *d2.W is prepared
+    *d3.b is prepared
+    *a6 was incremented and is prepared.
+    jsr         GET_EA
+
+ASRROUTINE_END_LINE:
+    * end the line and terminate the string
+    lea         LINE_END,a2
+    jsr         COPY_STRING_A2_TO_A1
+    move.b      #0,(a1)+
+
+ASRROUTINE_END:
+    movem.l     (sp)+,A0/A2-A5/D0-D7
+    rts
+
+* End of ASRROUTINE subroutine
 
 DATAROUTINE:
 *Description:
