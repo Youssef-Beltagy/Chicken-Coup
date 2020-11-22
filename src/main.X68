@@ -11,10 +11,10 @@ START:                  ; first instruction of program
 * FIXME: For Testing, DELETE LATER *============================
     bra         SKIP_TESTS * don't actually run the tests
 
-
     * write your opcodes 
     bra         BCCROUTINE_END
     nop *
+    and.l       #4,d3
     beq         MAIN_LOOP
     bra         START
     beq         MAIN_LOOP_PRINT
@@ -43,9 +43,22 @@ START:                  ; first instruction of program
 * FIXME: For Testing, DELETE LATER *============================
 
 
-
-
 SKIP_TESTS:
+
+    * print the start message
+    lea         PROGRAM_START_MESSAGE,a1
+    move.b      #14,d0
+    trap        #15
+    bra         MAIN_GET_USER_INPUT
+
+MAIN_GET_NEW_ADDRESSES: * ask for user input again.
+    lea         MORE_MEMORY_MESSAGE,a1
+    move.b      #14,d0
+    trap        #15
+    bra         MAIN_GET_USER_INPUT
+
+MAIN_GET_USER_INPUT:
+    * GET the valid user input or exit the program.
     jsr         INPUT_OR_EXIT
     cmp.l       #-1,d7
     beq         EXIT_PROGRAM
@@ -78,34 +91,57 @@ SKIP_TESTS:
 *TODO: IMPlement a subroutine for the loop if necessary
 
     *The Main Loop
-    movea.l     INPUT_START,a6
+    movea.l     INPUT_START,a6 * Initialize the loop.
+    move.l      #INITIAL_COUNT,MAIN_LOOP_COUNTER * print INITIAL_COUNT lines at a time.
+
 
 MAIN_LOOP:
-    cmp.l       INPUT_END,a6     
-    BGT         EXIT_PROGRAM
+    cmp.l       INPUT_END,a6 *test exit condition
+    BGT         MAIN_GET_NEW_ADDRESSES * Should you exit and ask for new addresses?
+
+    move.l      MAIN_LOOP_COUNTER,d2 * Is the screen full and you should wait?
+    cmp.l       #0,d2
+    bne         MAIN_LOOP_DONT_WAIT * the screen is not full.
+
+    jsr         CONTINUE_OR_EXIT * the screen is full.
+    cmp.l       #-1,d7
+    beq         EXIT_PROGRAM
+
+MAIN_LOOP_DONT_WAIT:
+
+    * update the counter.
+    add.l       #-1,MAIN_LOOP_COUNTER
+
+    * load the buffer
     lea         BUFFER,a1
 
     *Inclusive of INPUT_END
     *Will read the op-code starting at INPUT_END
     *That op-code could be 80 bytes, and there won't be a problem.
 
+    * print the address of the instruction
     move.l      a6,d2
     jsr         STRING_FROM_LONG
-    move.b      #9,(a1)+ * print a tab.
+    move.b      #TAB,(a1)+ * print a tab.
 
 
+    * Is this NOP?
     cmp.w       #$4E71,(a6)
     bne         SKIP_NOPROUTINE
     jsr         NOPROUTINE
     bra         MAIN_LOOP_PRINT
 SKIP_NOPROUTINE:
 
+
+    * Is this RTS?
     cmp.w       #$4E75,(a6)
     bne         SKIP_RTSROUTINE
     jsr         RTSROUTINE
     bra         MAIN_LOOP_PRINT
-
 SKIP_RTSROUTINE:
+
+
+    * Is This BCCROUTINE?
     move.w      (a6),d0
     lsr.w       #6,d0
     lsr.w       #6,d0
@@ -113,9 +149,47 @@ SKIP_RTSROUTINE:
     bne         SKIP_BCCROUTINE
     jsr         BCCROUTINE
     bra         MAIN_LOOP_PRINT
-
 SKIP_BCCROUTINE:
 
+
+    * Is this ANDROUTINE?
+    move.w      (a6),d0 * Must begin with a C.
+    lsr.w       #6,d0
+    lsr.w       #6,d0
+    cmp.b       #$C,d0
+    bne         SKIP_ANDROUTINE
+    move.w      (a6),d0
+    lsl.w       #4,d0
+    lsl.w       #4,d0
+    lsr.w       #7,d0
+    lsr.w       #7,d0
+    cmp.b       #3,d0 * The size must not be %11 = 3
+    beq         SKIP_ANDROUTINE
+    move.w      (a6),d0
+    btst        #8,d0
+    bne         CONTINUE_CHECKING_ANDROUTINE * If the eigth bit is zero this is likely ANDROUTINE.
+                * If the eight bit is 0, this is an and op-code.
+                * The 0 in the eight bit chooses the direction of <ea> & Dn -> Dn 
+    lsl.b       #2,d0 *The only invalid EA for this direction is An.
+    lsr.b       #5,d0 * I don't see a reason to test for it here, but I still did. FIXME: Is this a good choice?
+    cmp.b       #1,d0
+    beq         SKIP_ANDROUTINE
+    jsr         ANDROUTINE  
+    bra         MAIN_LOOP_PRINT  
+CONTINUE_CHECKING_ANDROUTINE:  * Else, we need to check more.
+    * The destination is not a data register.
+    * It must not be an Address register as well.
+    * So we must check the mode of the destination operand and make sure
+    * that it isn't 000 or 001
+    lsl.b       #2,d0
+    lsr.b       #5,d0
+    cmp.b       #0,d0
+    beq         SKIP_ANDROUTINE
+    cmp.b       #1,d0
+    beq         SKIP_ANDROUTINE
+    jsr         ANDROUTINE
+    bra         MAIN_LOOP_PRINT
+SKIP_ANDROUTINE:
 
 
 *put more op-code subroutine calls here.
@@ -174,8 +248,11 @@ INPUT_OR_EXIT_LOOP:
     blt         INPUT_OR_EXIT_INVALID
 
     *program termination value
+    * FIXME: THIS Exists the program simply if the first character is q
+    * FIXME: If the start input is something like q1001000, then even though it is invalid,
+    * FIXME: The program will exit.
     cmp.b       #113,(a1) *113 is for 'q'
-    beq         INPUT_OR_EXIT_TERMINATE *return error code
+    beq         INPUT_OR_EXIT_TERMINATE *return exit code
 
     *convert the string into a long
     jsr         LONG_FROM_STRING
@@ -183,8 +260,8 @@ INPUT_OR_EXIT_LOOP:
     beq         INPUT_OR_EXIT_INVALID
 
     *Test that the start address is even
-    btst        #0,d6 *TODO: Possibly print a special message for odd start input.
-    bne         INPUT_OR_EXIT_INVALID 
+    btst        #0,d6
+    bne         INPUT_OR_EXIT_INVALID_ODD 
 
     *copy the input
     move.l      d6,INPUT_START
@@ -209,8 +286,7 @@ INPUT_OR_EXIT_LOOP:
 
     *Check the validity of the addresses
     cmp.l       INPUT_START,d6
-    blt         INPUT_OR_EXIT_INVALID
-    *TODO: Print a unique message when the end address is 
+    blt         INPUT_OR_EXIT_INVALID_GT
     * is smaller than the start address
 
     *set the error flag to 0
@@ -227,12 +303,80 @@ INPUT_OR_EXIT_INVALID:
     trap        #15
     bra         INPUT_OR_EXIT_LOOP
 
+INPUT_OR_EXIT_INVALID_ODD:
+    *prints invalid message for odd start address
+    *and prompts for input again
+    lea         INVALID_MESSAGE_ODD,a1
+    move.b      #14,d0
+    trap        #15
+    bra         INPUT_OR_EXIT_LOOP
+
+INPUT_OR_EXIT_INVALID_GT:
+    *prints invalid message when the start address is greater
+    *than the ending address and prompts for input again.
+    lea         INVALID_MESSAGE_GT,a1
+    move.b      #14,d0
+    trap        #15
+    bra         INPUT_OR_EXIT_LOOP
+
 INPUT_OR_EXIT_TERMINATE:
     move.l      #-1,d7
 INPUT_OR_EXIT_END:
     movem.l     (sp)+,d0-d6/a0-a6
     rts
 * End of INPUT_OR_EXIT
+
+CONTINUE_OR_EXIT:
+*Description:
+*Ensures that MAIN_LOOP_COUNTER is reset or that
+*d7.l = -1 to indicate that the program should terminate.
+*nothing changes other than MAIN_LOOP_COUNTER or d7.l
+*Input: nothing
+*Output: d7.l
+    movem.l     d0/d1/a1,-(sp)
+
+CONTINUE_OR_EXIT_LOOP:
+
+    *get the input
+    lea         BUFFER,a1
+    move.b      #2,d0
+    trap        #15
+
+    *If the size of the string is 0, this was just enter.
+    cmp.w       #0,d1
+    beq         CONTINUE_OR_EXIT_CONTINUE
+
+    cmp.w       #1,d1 * More than one character is invalid input
+    bne         CONTINUE_OR_EXIT_INVALID 
+
+    *program termination value
+    cmp.b       #113,(a1) *113 is for 'q'
+    beq         CONTINUE_OR_EXIT_TERMINATE *return exit code
+
+    * this must have been invalid input by this point.
+    bra         CONTINUE_OR_EXIT_INVALID
+
+
+CONTINUE_OR_EXIT_INVALID:
+    *prints invalid message
+    *and prompts for input again
+    lea         WAIT_INVALID_MESSAGE,a1
+    move.b      #14,d0
+    trap        #15
+    bra         CONTINUE_OR_EXIT_LOOP
+
+
+CONTINUE_OR_EXIT_CONTINUE:
+    move.l      #INITIAL_COUNT,MAIN_LOOP_COUNTER * print INITIAL_COUNT lines at a time.
+    move.l      #0,d7
+    bra         CONTINUE_OR_EXIT_END
+
+CONTINUE_OR_EXIT_TERMINATE:
+    move.l      #-1,d7
+CONTINUE_OR_EXIT_END:
+    movem.l     (sp)+,d0/d1/a1
+    rts
+* End of CONTINUE_OR_EXIT
 
 
 LONG_FROM_STRING:
@@ -308,6 +452,62 @@ LONG_FROM_STRING_END:
     rts
 * End of LONG_FROM_STRING subroutine
 
+STRING_FROM_NIBBLE:
+*Description:
+*Given the lower nibble at d1.b, will convert that into a char in the
+*memory pointed to by a1.
+*nothing other than a1 and the memory it points to will change
+*Input: a1, d1.b
+*Output: a1 and the memory it points to
+    movem.l     d1,-(sp)
+
+    and.b       #$0f,d1 *get rid of extra bits.
+
+    cmp.b       #9,d1
+    bgt         STRING_FROM_NIBBLE_CHAR * is this byte A-F
+    add.b       #48,d1 * this byte is 0-9
+    move.b      d1,(a1)+
+    bra         STRING_FROM_NIBBLE_END
+
+STRING_FROM_NIBBLE_CHAR: *this byte is A-F
+    add.b       #55,d1
+    move.b      d1,(a1)+
+
+STRING_FROM_NIBBLE_END:
+    movem.l     (sp)+,d1
+    rts
+* End of STRING_FROM_NIBBLE
+
+STRING_FROM_BYTE:
+*Description:
+*Given a byte at d2.b, will convert that into a string of hex
+*digits pointed to by a1
+*nothing other than a1 and the memory it points to will change
+*Input: a1, d2.b
+*Output: a1 and the memory it points to
+    movem.l     d0/d1,-(sp)
+
+    move.l      #0,d0 * loop variable. Used for shifting lift
+    move.l      #0,d1 * temp register for the byte
+
+STRING_FROM_BYTE_LOOP:
+    move.b      d2,d1 * get the byte
+    cmp.b       #8,d0 * is the loop over?
+    beq         STRING_FROM_BYTE_END
+
+    lsl.b       d0,d1  * gets rid of all excess more significant bits
+    lsr.b       #4,d1  * gets rid of all excess less significant bits
+
+    add.b       #4,d0  * Next time, shift to the lift 4 more bits
+
+    jsr         STRING_FROM_NIBBLE
+    bra         STRING_FROM_BYTE_LOOP
+
+STRING_FROM_BYTE_END:
+    movem.l     (sp)+,d0/d1
+    rts
+* End of STRING_FROM_BYTE
+
 STRING_FROM_WORD:
 *Description:
 *Given a word at d2.w, will convert that into a string of hex
@@ -331,15 +531,7 @@ STRING_FROM_WORD_LOOP:
 
     add.b       #4,d0  * Next time, shift to the lift 4 more bits
 
-    cmp.b       #9,d1
-    bgt         STRING_FROM_WORD_CHAR * is this byte A-F
-    add.b       #48,d1 * this byte is 0-9
-    move.b      d1,(a1)+
-    bra         STRING_FROM_WORD_LOOP
-
-STRING_FROM_WORD_CHAR: *this byte is A-F
-    add.b       #55,d1
-    move.b      d1,(a1)+
+    jsr         STRING_FROM_NIBBLE
     bra         STRING_FROM_WORD_LOOP
 
 STRING_FROM_WORD_END:
@@ -383,11 +575,432 @@ COPY_STRING_A2_TO_A1_LOOP:
 COPY_STRING_A2_TO_A1_END
     movem.l     (sp)+,d0/a2
     rts
-* End of COPY_STRING_A2_TO_A1  
+* End of COPY_STRING_A2_TO_A1
+
+IS_EA_VALID:
+*Description:
+*Determines if the EA of the current op-code at (a6) is valid or not.
+*If the effective address is not valid, then calls DATAROUTINE
+*and returns -1 in d7.l.
+*If the effective address is valid, returns 0 in d7.l
+*Nothing should be affected other than a6, d7.l, a1,
+*and the memory a1 points to.
+*Nothing other than a1 will change
+*Input: a6, a1
+*Output: a6, d7.l, a1, and the memory pointed to by a1.
+    movem.l     d0/d1,-(sp)
+
+
+    move.l      #0,d0
+    move.w      (a6),d0
+
+    lsl.w       #5,d0 * get the least significant six bits
+    lsl.w       #5,d0
+    lsr.w       #5,d0
+    lsr.w       #5,d0
+
+    move.l      d0,d1 * copy to d1.
+
+    lsr.b       #3,d0 * d0 represents the mode from now on.
+    and.b       #7,d1 * d1 represents the register bits from now on.
+
+    cmp.b       #5,d0
+    blt         IS_EA_VALID_TRUE * The first 5 addressing modes are valid.
+
+    cmp.b       #7,d0
+    blt         IS_EA_VALID_FALSE * the sixth and seventh addressing modes are invalid.
+
+    * that leaves the last addressing mode.
+    * I will use the 3 register bits at d1 to make decisions from now on.
+
+    cmp.b       #2,d1 * the first two modes are valid.
+    blt         IS_EA_VALID_TRUE * abs short and abs long
+
+    cmp.b       #4,d1 * the immediate accessing mode.
+    beq         IS_EA_VALID_TRUE
+
+
+    * Any other mode is invalid by this point.
+
+IS_EA_VALID_FALSE:
+    jsr         DATAROUTINE * call dataroutine.
+    move.l      #-1,d7 * return -1 to represent an invalid EA
+    bra         IS_EA_VALID_END
+
+IS_EA_VALID_TRUE:
+    move.l      #0,d7 * return 0 to represent a valid EA
+
+IS_EA_VALID_END:
+    movem.l     (sp)+,d0/d1
+    rts
+* End of IS_EA_VALID
+
+
+GET_LIGHT_PURPLE_SIZE:
+*Description:
+*Given an op-code at (a6) that uses
+* the light purple size in http://goldencrystal.free.fr/M68kOpcodes-v2.3.pdf.
+* This subroutine will print the approperiate size (B|W|L) in the value pointed to by a1.
+* If the input is Invalid, prints ERROR_STRING.
+* returns the TEMP_VARIABLE.b.
+*Input: a6
+*Output: a1, TEMP_VARIABLE.b
+    movem.l     d0/a2,-(sp)
+
+    move.w      (a6),d0 * get the bits at the 6th and 7th index (0-indexing from the right)
+    lsl.w       #4,d0
+    lsl.w       #4,d0
+    lsr.w       #7,d0
+    lsr.w       #7,d0
+
+    move.b      d0,TEMP_VARIABLE * return the size TEMP_VARIABLE.b
+
+    cmp.b       #0,d0
+    beq         GET_LIGHT_PURPLE_SIZE_BYTE
+
+    cmp.b       #1,d0
+    beq         GET_LIGHT_PURPLE_SIZE_WORD
+
+    cmp.b       #2,d0
+    beq         GET_LIGHT_PURPLE_SIZE_LONG
+
+    *The defualt error case!
+    lea         ERROR_STRING,a2
+    jsr         COPY_STRING_A2_TO_A1
+    bra         GET_LIGHT_PURPLE_SIZE_END
+
+GET_LIGHT_PURPLE_SIZE_BYTE
+    move.b      #66,(a1)+ * B
+    bra         GET_LIGHT_PURPLE_SIZE_END
+
+GET_LIGHT_PURPLE_SIZE_WORD
+    move.b      #87,(a1)+ * W
+    bra         GET_LIGHT_PURPLE_SIZE_END
+
+GET_LIGHT_PURPLE_SIZE_LONG
+    move.b      #76,(a1)+ * L
+    bra         GET_LIGHT_PURPLE_SIZE_END
+
+GET_LIGHT_PURPLE_SIZE_END:
+    movem.l     (sp)+,d0/a2
+    rts
+* End of GET_LIGHT_PURPLE_SIZE
+
+GET_A_REG_DIRECT:
+*Description:
+*Given a byte at d2.b, will print "A" then the number of the
+*address register that is specified in d2.b.
+*Assumes the address register number (d2.b) is valid [0,7].
+*nothing other than a1 and the memory it points to will change
+*Input: a1, d2.b
+*Output: a1 and the memory it points to
+    movem.l     d2,-(sp)
+
+    move.b      #65,(a1)+
+
+    add.b       #48,d2
+    move.b      d2,(a1)+
+
+    movem.l     (sp)+,d2
+    rts
+* End of GET_A_REG_DIRECT
+
+GET_D_REG_DIRECT:
+*Description:
+*Given a byte at d2.b, will print "D" then the number of the
+*address register that is specified in d2.b.
+*Assumes the data register number (d2.b) is valid [0,7].
+*nothing other than a1 and the memory it points to will change
+*Input: a1, d2.b
+*Output: a1 and the memory it points to
+    movem.l     d2,-(sp)
+
+    move.b      #68,(a1)+
+
+    add.b       #48,d2
+    move.b      d2,(a1)+
+
+    movem.l     (sp)+,d2
+    rts
+* End of GET_D_REG_DIRECT
+
+GET_A_REG_INDIRECT:
+*Description:
+*Given a byte at d2.b, will print "(A" then the number of the
+*address register that is specified in d2.b and ")".
+*Assumes the address register number (d2.b) is valid [0,7].
+*nothing other than a1 and the memory it points to will change
+*Input: a1, d2.b
+*Output: a1 and the memory it points to
+    
+    move.b      #40,(a1)+
+    jsr         GET_A_REG_DIRECT
+    move.b      #41,(a1)+
+
+    rts
+* End of GET_A_REG_INDIRECT
+
+GET_A_REG_INDIRECT_POST:
+*Description:
+*Given a byte at d2.b, will print "(A" then the number of the
+*address register that is specified in d2.b and ")+".
+*Assumes the address register number (d2.b) is valid [0,7].
+*nothing other than a1 and the memory it points to will change
+*Input: a1, d2.b
+*Output: a1 and the memory it points to
+    
+    jsr         GET_A_REG_INDIRECT
+    move.b      #43,(a1)+
+    
+    rts
+* End of GET_A_REG_INDIRECT_POST
+
+GET_A_REG_INDIRECT_PRE:
+*Description:
+*Given a byte at d2.b, will print "-(A" then the number of the
+*address register that is specified in d2.b and ")".
+*Assumes the address register number (d2.b) is valid [0,7].
+*nothing other than a1 and the memory it points to will change
+*Input: a1, d2.b
+*Output: a1 and the memory it points to
+    
+    move.b      #45,(a1)+
+    jsr         GET_A_REG_INDIRECT
+    
+    rts
+* End of GET_A_REG_INDIRECT_PRE
+
+GET_INVALID_ADDRESSING_MODE:
+*Description:
+*Loads "IAM" into the memory pointed to by a1
+*nothing other than a1 and the memory it points to will change
+*Input: a1
+*Output: a1 and the memory it points to
+    movem.l     A2, -(sp)
+
+    *lea         IAM_STRING,a2
+    lea         ERROR_STRING,a2 * print a clear error message so the programmer may notice.
+    jsr         COPY_STRING_A2_TO_A1
+
+    movem.l     (sp)+,A2
+    rts
+* End of GET_INVALID_ADDRESSING_MODE
+
+GET_EA: * Get the effective address.
+*Description:
+*Requires d3.b to contain the size of the instruction in case it is immediate.
+*You must set d3.b to a value in the range of [0,2]. 0 for byte. 1 for word. 2 for long.
+*If d3.b contains anything aside from [0,2] and the EA was immediate, ERROR_STRING will be printed.
+*Requires d2.w to contain the instruction.
+*Requires a1 to point to buffer.
+*Requires a6 to point to the next insturction or the memory of
+*the data of this EA.
+*Again, Requires a6 to point to the memory of the data of this EA or the
+*next instruction.
+*By the end of this subroutine, a6 will point to the next
+*instruction.
+*This subroutine is really powerful. But it needs to make a lot
+*of assumptions. It is YOUR responsibility to ensure these
+*prerequisites are correct!
+*It is YOUR responsibility to print anything you need to print before
+*or after GET_EA.
+*Nothing other than a1 and the value it points to will change.
+*input: a6, d2.w, d3.b
+*Output: a6, the value pointed to by a1
+    movem.l     A2/D0-D3, -(sp)
+    
+    move.l      #0,d0
+    move.w      d2,d0 * The instruction is in d0 from now.
+
+    move.l      d0,d2 * The register will be stored in d2.
+    and.w       #$0007,d2
+
+    move.l      d0,d1 * The mode will be stored in d1.
+    lsr.w       #3,d1
+    and.w       #$0007,d1
+
+    lea         GET_EA_JMP_TABLE,a2
+    mulu.w      #6,d1 * values between [0,42]
+    jmp         (0,a2,d1)
+
+GET_EA_JMP_TABLE: * decides which mode it is.
+    jmp         GET_EA_000
+    jmp         GET_EA_001
+    jmp         GET_EA_010
+    jmp         GET_EA_011
+    jmp         GET_EA_100
+    jmp         GET_EA_101
+    jmp         GET_EA_110
+    jmp         GET_EA_111
+
+GET_EA_000: * direct data register
+    jsr         GET_D_REG_DIRECT
+    bra         GET_EA_END
+
+GET_EA_001: * direct address register
+    jsr         GET_A_REG_DIRECT
+    bra         GET_EA_END
+
+GET_EA_010: * indirect address register
+    jsr         GET_A_REG_INDIRECT
+    bra         GET_EA_END
+
+GET_EA_011: * indirect address register with post-increment
+    jsr         GET_A_REG_INDIRECT_POST
+    bra         GET_EA_END
+
+GET_EA_100: * indirect address register with pre-increment
+    jsr         GET_A_REG_INDIRECT_PRE
+    bra         GET_EA_END
+
+GET_EA_101: * Invalid addressing mode
+GET_EA_110: * Invalid addressing mode
+    jsr         GET_INVALID_ADDRESSING_MODE
+    bra         GET_EA_END
+
+GET_EA_111: * Absolute short, absolute long, immediate, and Invalid addressing mode.
+    *FIXME: THIS mode is non trivial. REVIEW IT AGAIN LATER IN THE QUARTER JUST TO BE SAFE!
+    cmp.b       #0,d2
+    bne         GET_EA_111_NOT_ABS_SHORT
+    move.b      #36,(a1)+
+    move.w      (a6)+,d2
+    jsr         STRING_FROM_WORD
+    bra         GET_EA_END
+GET_EA_111_NOT_ABS_SHORT:
+
+    cmp.b       #1,d2
+    bne         GET_EA_111_NOT_ABS_LONG
+    move.b      #36,(a1)+
+    move.l      (a6)+,d2
+    jsr         STRING_FROM_LONG
+    bra         GET_EA_END
+GET_EA_111_NOT_ABS_LONG:
+
+    cmp.b       #4,d2
+    bne         GET_EA_111_NOT_IMMEDIATE
+
+    *print "#$"
+    move.b      #35,(a1)+
+    move.b      #36,(a1)+
+
+    cmp.b       #0,d3 * Immediate byte!
+    bne         GET_EA_111_IMMEDIATE_NOT_B
+    move.w      (a6)+,d2
+    jsr         STRING_FROM_BYTE *prints the least significant byte
+    bra         GET_EA_END
+GET_EA_111_IMMEDIATE_NOT_B:
+
+    cmp.b       #1,d3 * Immediate word.
+    bne         GET_EA_111_IMMEDIATE_NOT_W
+    move.w      (a6)+,d2
+    jsr         STRING_FROM_WORD * prints the word
+    bra         GET_EA_END
+GET_EA_111_IMMEDIATE_NOT_W:
+
+    cmp.b       #2,d3 *Immediate LONG
+    bne         GET_EA_111_IMMEDIATE_NOT_L
+    move.l      (a6)+,d2
+    jsr         STRING_FROM_LONG *prints the long
+    bra         GET_EA_END
+GET_EA_111_IMMEDIATE_NOT_L:
+
+    *Programmer error! Didn't set d3.b properly
+    lea         ERROR_STRING,a2
+    jsr         COPY_STRING_A2_TO_A1 * prints an error.
+    bra         GET_EA_END
+
+GET_EA_111_NOT_IMMEDIATE:
+    *must be an invalid addressing mode!
+    jsr         GET_INVALID_ADDRESSING_MODE
+    bra         GET_EA_END
+
+GET_EA_END:
+    movem.l     (sp)+,A2/D0-D3
+    rts
+
+* End of GET_EA subroutine
 
 * Op-cdoe Subroutines
 *-----------------------------------------------------------
 * Put your Op-Code Subroutine here
+
+ANDROUTINE:
+*Description:
+*Loads "AND", then the size and the effective addressing modes into
+*into buffer and makes a6 point to the next op-code.
+*Requires a1 to point to buffer.
+*input: a6
+*Output: a6, the value pointed to by a1
+    movem.l     A0/A2-A5/D0-D7, -(sp)
+
+    * Check the validty of the addressing mode first.
+    jsr         IS_EA_VALID
+    cmp.l       #-1,d7
+    beq         ANDROUTINE_END
+
+    lea         AND_OPCODE,a2
+    jsr         COPY_STRING_A2_TO_A1 *Copy "DATA: $" into a1
+
+    jsr         GET_LIGHT_PURPLE_SIZE * prints the size and sets TEMP_VARIABLE.b.
+    move.b      TEMP_VARIABLE,d3 * set d3.b for future use. Don't use it from now on.
+
+
+    move.b      #SPC,(a1)+ * Leave some spaces to print beautifully.
+    move.b      #SPC,(a1)+
+
+    move.w      (a6)+,d2 * make d2.w contain the instruction and increment a6
+
+    move.l      #0,d1 * clear d4
+    move.w      d2,d1 * copy the instruction.
+    lsl.w       #4,d1 * Make d4 contain the number of the data register.
+    lsr.w       #6,d1
+    lsr.w       #7,d1
+
+    btst        #8,d2
+    bne         ANDROUTINE_TO_EA * the destination is EA.
+
+    *The destionation is Dn.
+
+    *d2.W is prepared
+    *d3.b is prepared
+    *a6 was incremented and is prepared.
+    jsr         GET_EA  * print the effective address
+
+    move.b      #44,(a1)+ * print a comma
+
+    move.b      d1,d2 * d2 contains the data register number now.
+    jsr         GET_D_REG_DIRECT *print the data register
+    bra         ANDROUTINE_END_LINE
+
+ANDROUTINE_TO_EA: *the destination is EA
+    move.l      d2,d0 * save d2
+    move.b      d1,d2 * d2 contains the data register number now.
+    jsr         GET_D_REG_DIRECT
+
+    move.b      #44,(a1)+ * print a comma
+
+
+    move.l      d0,d2 * load d2
+
+    *d2.W is prepared
+    *d3.b is prepared
+    *a6 was incremented and is prepared.
+    jsr         GET_EA
+    BRA         ANDROUTINE_END_LINE
+
+ANDROUTINE_END_LINE:
+    lea         LINE_END,a2
+    jsr         COPY_STRING_A2_TO_A1
+    move.b      #0,(a1)+ * ybeltagy: the last line I wrote for ANDROUTINE,
+                         * GET_EA, STRING_FROM_BYTE, all the GET addresses subroutines, and
+                         * GET_LIGHT_PURPLE_SIZE.
+                         * such long days!
+
+ANDROUTINE_END:
+    movem.l     (sp)+,A0/A2-A5/D0-D7
+    rts
+
+* End of ANDROUTINE subroutine
 
 NOPROUTINE:
 *Description:
@@ -585,12 +1198,17 @@ BCCROUTINE_END:
 *-----------------------------------------------------------
 * Put variables and constants here
 
-CR          equ $0D
-LF          equ $0A
+CR                  equ $0D
+LF                  equ $0A
+INITIAL_COUNT       equ 25
+SPC                 equ 32
+TAB                 equ 9
 
 BUFFER
  * an input BUFFER
     ds.b   180 *A BUFFER of 180 bytes
+MAIN_LOOP_COUNTER
+    ds.l    1
 
 INPUT_START
     ds.l    1
@@ -598,11 +1216,14 @@ INPUT_START
 INPUT_END
     ds.l    1
 
+TEMP_VARIABLE
+    ds.l    1
+
 NOP_OPCODE
     dc.b    'NOP',CR,LF,0
 
 DATA_OPCODE
-    dc.b    'DATA:  $',0 * must be null terminated
+    dc.b    'DATA   $',0 * must be null terminated
 
 BRA_OPCODE
     dc.b    'BRA    $',0
@@ -619,31 +1240,65 @@ BEQ_OPCODE
 RTS_OPCODE
     dc.b    'RTS',CR,LF,0
 
+AND_OPCODE
+    dc.b    'AND.',0
+
+IAM_STRING
+    dc.b    'IAM',0
+
+ERROR_STRING
+    dc.b    'ERROR! ERROR! ERROR!',CR,LF,0
+
 INPUT_START_MESSAGE
-    dc.b   'Please Enter Starting Address: ',0
+    dc.b   'Please enter the starting address (or q to exit): ',0
 
 INPUT_END_MESSAGE
-    dc.b   'Please Enter Ending Address: ',0
+    dc.b   'Please enter the ending address: ',0
+
+MORE_MEMORY_MESSAGE
+    dc.b    'Finished Disassembling!',CR,LF,CR,LF
+    dc.b    'Do you want to disassemble more?',CR,LF,0
 
 TERMINATION_MESSAGE
     dc.b    'Program Terminated',0
 
 INVALID_MESSAGE
-    dc.b    'Invalid input. Input must be 8-digit hex number',CR,LF,0
-    
+    dc.b    'Invalid input: The input must be 8-digit hex number',CR,LF,0
+
+INVALID_MESSAGE_ODD
+    dc.b    'Invalid input: The start address must be even',CR,LF,0
+
+INVALID_MESSAGE_GT
+    dc.b    'Invalid input: The start address can not be greater than the end address.',CR,LF,0
+
+WAIT_INVALID_MESSAGE
+    dc.b    'Invalid input: press enter or q.'
+
 LINE_END
     dc.b    CR,LF,0
 
+PROGRAM_START_MESSAGE
+    dc.b    '   ___ _     _      _                  ___                    _  ',CR,LF
+    dc.b    '  / __\ |__ (_) ___| | _____ _ __     / __\___  _   _ _ __   / \ ',CR,LF
+    dc.b    ' / /  | ',39,'_ \| |/ __| |/ / _ \ ',39,'_ \   / /  / _ \| | | | ',39,'_ \ /  / ',CR,LF
+    dc.b    '/ /___| | | | | (__|   <  __/ | | | / /__| (_) | |_| | |_) /\_/  ',CR,LF
+    dc.b    '\____/|_| |_|_|\___|_|\_\___|_| |_| \____/\___/ \__,_| .__/\/    ',CR,LF
+    dc.b    '                                                     |_|         ',CR,LF
+    dc.b    TAB,TAB,TAB,TAB,'           __// ',CR,LF
+    dc.b    TAB,TAB,TAB,TAB,'          /.__.\',CR,LF
+    dc.b    TAB,TAB,TAB,TAB,'          \ \/ /',CR,LF
+    dc.b    TAB,TAB,TAB,TAB,'      ',39,'___/    \',CR,LF
+    dc.b    TAB,TAB,TAB,TAB,'       \-      )',CR,LF
+    dc.b    TAB,TAB,TAB,TAB,'        \_____/',CR,LF
+    dc.b    TAB,TAB,TAB,TAB,'     _____|_|____',CR,LF
+    dc.b    TAB,TAB,TAB,TAB,'           ',34,' ',34,' ',CR,LF
+    dc.b    CR,LF
+    dc.b    'A Motorola 68K disassembler.',CR,LF
+    dc.b    'Please input your addresses as 8 hex-digits!',CR,LF
+    dc.b    'When the program pauses, press enter to continue or q to exit.',CR,LF,LF,0
+
 
     END    START        ; last line of source
-
-
-
-
-
-
-
-
 
 
 *~Font name~Courier New~
