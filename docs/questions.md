@@ -20,6 +20,7 @@ This file is for documenting questions to the professor and their answers.
 - How to test BRA Long? We don't have big enough files.
 - Ask about bug in the main.
 - LSd and ASd have two signatures each. For the <ea> one, should we write the size or not?
+- How do we test bcc with long displacement?
 
 
 

@@ -78,7 +78,7 @@ The program will print the op-code or data until the end of the output console o
 
 ### Flow-Chart
 
-![](https://chicken-coup.ybeltagy.com/disassembler_design.png)
+![](https://68k-disassembler.ybeltagy.com/disassembler_design_2.png)
 
 
 
