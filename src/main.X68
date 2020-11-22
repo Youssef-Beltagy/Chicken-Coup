@@ -43,13 +43,19 @@ START:                  ; first instruction of program
 * FIXME: For Testing, DELETE LATER *============================
 
 
-
 SKIP_TESTS:
 
     * print the start message
     lea         PROGRAM_START_MESSAGE,a1
     move.b      #14,d0
     trap        #15
+    bra         MAIN_GET_USER_INPUT
+
+MAIN_GET_NEW_ADDRESSES: * ask for user input again.
+    lea         MORE_MEMORY_MESSAGE,a1
+    move.b      #14,d0
+    trap        #15
+    bra         MAIN_GET_USER_INPUT
 
 MAIN_GET_USER_INPUT:
     * GET the valid user input or exit the program.
@@ -203,14 +209,6 @@ MAIN_LOOP_PRINT:
     trap        #15
     bra         MAIN_LOOP
 
-
-MAIN_GET_NEW_ADDRESSES:
-    lea         MORE_MEMORY_MESSAGE,a1
-    move.b      #14,d0
-    trap        #15
-    bra         MAIN_GET_USER_INPUT
-
-
 EXIT_PROGRAM:
     lea         TERMINATION_MESSAGE,a1
     move.b      #14,d0
@@ -250,6 +248,9 @@ INPUT_OR_EXIT_LOOP:
     blt         INPUT_OR_EXIT_INVALID
 
     *program termination value
+    * FIXME: THIS Exists the program simply if the first character is q
+    * FIXME: If the start input is something like q1001000, then even though it is invalid,
+    * FIXME: The program will exit.
     cmp.b       #113,(a1) *113 is for 'q'
     beq         INPUT_OR_EXIT_TERMINATE *return exit code
 
