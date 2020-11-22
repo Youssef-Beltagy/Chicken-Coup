@@ -10,10 +10,50 @@ START:                  ; first instruction of program
 
 * FIXME: For Testing, DELETE LATER *============================
     bra         SKIP_TESTS * don't actually run the tests
-
     jsr         START
     jmp         START
     jsr         SKIP_TESTS
+
+    lsl         (a0)
+    lsl         (a1)+
+    lsl         -(a2)
+    lsl         $ab
+    lsl         $fd20
+    lsl         (0,a3)
+    lsl         (2,a4,d0)
+    lsl.b       #1,d1
+    lsl.w       #2,d2
+    lsl.l       #3,d3
+    lsl.b       #4,d4
+    lsl.w       #5,d5
+    lsl.l       #6,d6
+    lsl.b       #7,d7
+    lsl.w       #8,d0
+    lsl.l       d0,d0
+    lsl.b       d1,d0
+    lsl.w       d2,d0
+    lsl.l       d4,d0
+
+    lsr         (a0)
+    lsr         (a1)+
+    lsr         -(a2)
+    lsr         $ab
+    lsr         $fd20
+    lsr         (0,a3)
+    lsr         (2,a4,d0)
+    lsr.b       #1,d1
+    lsr.w       #2,d2
+    lsr.l       #3,d3
+    lsr.b       #4,d4
+    lsr.w       #5,d5
+    lsr.l       #6,d6
+    lsr.b       #7,d7
+    lsr.w       #8,d0
+    lsr.l       d0,d0
+    lsr.b       d1,d0
+    lsr.w       d2,d0
+    lsr.l       d4,d0
+
 
     muls        d0,d1
     muls.w      d2,d3
@@ -292,7 +332,7 @@ SKIP_NOTROUTINE:
     bra         MAIN_LOOP_PRINT
 SKIP_LEAROUTINE:
 
-*Is this MULS
+    *Is this MULS
     move.w      (a6),d0
     lsr.w       #4,d0
     lsl.b       #3,d0
@@ -302,6 +342,48 @@ SKIP_LEAROUTINE:
     jsr         MULSROUTINE
     bra         MAIN_LOOP_PRINT
 SKIP_MULSROUTINE:
+
+
+
+    *Is this LSL
+    move.w      (a6),d0
+    lsr.w       #6,d0
+    cmp.w       #$38f,d0
+    bne         CONTINUE_LSLROUTINE
+    jsr         LSLROUTINE
+    bra         MAIN_LOOP_PRINT
+CONTINUE_LSLROUTINE:
+
+    * test the first nibble
+    move.w      (a6),d0
+    lsr.w       #6,d0
+    lsr.w       #6,d0
+    cmp.w       #$e,d0
+    bne         SKIP_LSLROUTINE
+
+    * test the size.
+    move.w      (a6),d0
+    lsr.w       #6,d0
+    and.w       #3,d0
+    cmp.w       #3,d0
+    beq         SKIP_LSLROUTINE
+
+    * test the direction
+    move.w      (a6),d0
+    btst        #8,d0
+    beq         SKIP_LSLROUTINE * if the direction is 0 (LSR), skip
+
+    * Is this LSL or nother shift left?
+    lsr.w       #3,d0
+    and.w       #3,d0
+    cmp.w       #1,d0
+    bne         SKIP_LSLROUTINE
+
+    jsr         LSLROUTINE
+    bra         MAIN_LOOP_PRINT
+SKIP_LSLROUTINE:
+
+    
 
 *put more op-code subroutine calls here.
 *Just like NOPROUTINE
@@ -1332,6 +1414,113 @@ MULSROUTINE_END:
     rts
 * End of MULSROUTINE subroutine
 
+LSLROUTINE:
+*Description:
+*Requires a1 to point to buffer.
+*Loads "LSL" into BUFFER and handles its size and EA.
+*If the EA is invalid, calls DATAROUTINE.
+*input: a6
+*Output: a6, a1, the value pointed to by a1
+    movem.l     A0/A2-A5/D0-D7, -(sp)
+    *could optimize by not copying anything except a2, d0, d7, d2, and d3
+
+    * test the size.
+    move.w      (a6),d0
+    lsr.w       #6,d0
+    and.w       #3,d0
+    cmp.w       #3,d0
+    beq         LSLROUTINE_EA * This is LSL for an ea.
+
+
+    * This is LSL for data registers
+    lea         LSL_OPCODE,a2
+    jsr         COPY_STRING_A2_TO_A1
+
+    *Print the size.
+    move.b      #PERIOD,(a1)+
+
+    * Get the size in TEMP_VARIABLE
+    jsr         GET_LIGHT_PURPLE_SIZE
+
+    move.b      #SPC,(a1)+ * Leave some spaces to print beautifully.
+    move.b      #SPC,(a1)+
+
+    * Get the register/count
+    move.w      (a6),d2
+    lsr.w       #4,d2
+    lsr.w       #5,d2
+    and.w       #7,d2
+
+    move.w      (a6),d0
+    btst        #5,d0
+    bne         LSLROUTINE_REGISTER * If the sixth bit is 1, then LSL uses a register.
+
+    * LSL uses Immediate data.
+    cmp.b       #0,d2
+    beq         LSLROUTINE_MAKE8
+
+LSLROUTINE_IMMEDIATE:
+    move.b      #35,(a1)+ * print #
+    add.w       #48,d2 * '0' to get values in range [1,8].
+    move.b      d2,(a1)+
+
+    bra         LSL_ROUTINE_D
+
+LSLROUTINE_MAKE8:
+    add.b       #8,d2
+    bra         LSLROUTINE_IMMEDIATE    
+
+
+LSLROUTINE_REGISTER: * The source is a data register.
+    jsr         GET_D_REG_DIRECT
+
+
+LSL_ROUTINE_D: * the destination is a data register
+    move.b      #COMMA,(a1)+
+
+    move.w      (a6),d2
+    and.w       #7,d2
+
+    jsr         GET_D_REG_DIRECT
+    adda.l      #2,a6   * increment a6
+    bra         LSLROUTINE_END_LINE
+
+
+LSLROUTINE_EA: * This is LSL for an ea destination.
+    jsr         IS_EA_VALID
+    cmp.l       #-1,d7
+    beq         LSLROUTINE_END
+
+    lea         LSL_OPCODE,a2
+    jsr         COPY_STRING_A2_TO_A1
+
+    *Print 4 spaces for beauty.
+    move.b      #SPC,(a1)+
+    move.b      #SPC,(a1)+
+    move.b      #SPC,(a1)+
+    move.b      #SPC,(a1)+
+
+    *prepare to call GET_EA
+    move.w      (a6)+,d2
+    move.b      #1,d3 * word size. FIXME: Unnecessary. Delete
+
+    *d2.W is prepared
+    *d3.b is prepared
+    *a6 was incremented and is prepared.
+    jsr         GET_EA
+
+LSLROUTINE_END_LINE:
+    * end the line and terminate the string
+    lea         LINE_END,a2
+    jsr         COPY_STRING_A2_TO_A1
+    move.b      #0,(a1)+
+
+LSLROUTINE_END:
+    movem.l     (sp)+,A0/A2-A5/D0-D7
+    rts
+
+* End of LSLROUTINE subroutine
+
 DATAROUTINE:
 *Description:
 *Loads "DATA: $" then the hex value of the word at (a6)
@@ -1494,6 +1683,7 @@ INITIAL_COUNT       equ 25
 SPC                 equ 32
 TAB                 equ 9
 COMMA               equ 44
+PERIOD              equ 46
 
 BUFFER
  * an input BUFFER
@@ -1545,6 +1735,12 @@ LEA_OPCODE
 
 MULS_OPCODE
     dc.b    'MULS   ',0
+
+LSL_OPCODE
+    dc.b    'LSL',0
+
+ASR_OPCODE
+    dc.b    'ASR',0
 
 IAM_STRING * FIXME: No longer needed. Consider deleting
     dc.b    'IAM',0
@@ -1602,6 +1798,8 @@ PROGRAM_START_MESSAGE
 
 
     END    START        ; last line of source
+
+
 
 
 
