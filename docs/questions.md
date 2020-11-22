@@ -32,3 +32,4 @@ This file is for documenting questions to the professor and their answers.
 - Just in case, talk about how to resume printing in the documentation.
 - Speed and efficiency don't matter that much.
 - Just print data instead of IAM
+- The index page is somewhat outdated. Remember to update it.

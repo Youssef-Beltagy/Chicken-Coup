@@ -1,8 +1,11 @@
 # Progress Report 3
 
 Date: 11/22/2020
+
 To: CSS 422, Autumn 2020
+
 From: Youssef Beltagy
+
 Subject: Implemented GET_EA, ASR, LSL, NOT, RTS, JSR, AND, MULS, and LEA
 
 ---
