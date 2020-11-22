@@ -49,7 +49,7 @@ A list of all required tasks.
 5. [ ] SUB
 6. [ ] MULS
 7. [ ] DIVU -- No longer required
-8. [ ] LEA
+8. [x] LEA
 9. [x] AND
 10. [x] NOT
 11. [ ] LSL

@@ -15,6 +15,18 @@ START:                  ; first instruction of program
     jmp         START
     jsr         SKIP_TESTS
 
+    lea         START,a0
+    lea         $00,a1
+    lea         $ff,a2
+    lea         $1000,a3
+    lea         $A000,a4
+    lea         $8000,a5
+    lea         (a6),a7
+    lea         (a7),a2
+    lea         (a4),a2
+    lea         (0,a2,d2),a5
+    lea         (20,a4),a7
+
     not.b       d0
     not.w       d1
     not.l       d2
@@ -49,6 +61,8 @@ START:                  ; first instruction of program
     jsr         $8000
     jsr         $90
     jsr         $ff
+    jsr         $ffff
+    jsr         $ffffffff
     jsr         (10,a5)
     jsr         (5,a4,d2)
     jsr         (5,PC)
@@ -242,6 +256,7 @@ SKIP_ANDROUTINE:
     bra         MAIN_LOOP_PRINT
 SKIP_JSRROUTINE
 
+    *Is this NOT?
     move.w      (a6),d0
     lsr.w       #8,d0
     cmp.w       #$46,d0
@@ -249,6 +264,17 @@ SKIP_JSRROUTINE
     jsr         NOTROUTINE
     bra         MAIN_LOOP_PRINT
 SKIP_NOTROUTINE:
+
+    *Is this LEA
+    move.w      (a6),d0
+    lsr.w       #4,d0
+    lsl.b       #3,d0
+    lsr.w       #5,d0
+    cmp.w       #$27,d0
+    bne         SKIP_LEAROUTINE
+    jsr         LEAROUTINE
+    bra         MAIN_LOOP_PRINT
+SKIP_LEAROUTINE:
 
 *put more op-code subroutine calls here.
 *Just like NOPROUTINE
@@ -1024,7 +1050,7 @@ ANDROUTINE:
     *a6 was incremented and is prepared.
     jsr         GET_EA  * print the effective address
 
-    move.b      #44,(a1)+ * print a comma
+    move.b      #COMMA,(a1)+ * print a comma
 
     move.b      d1,d2 * d2 contains the data register number now.
     jsr         GET_D_REG_DIRECT *print the data register
@@ -1035,7 +1061,7 @@ ANDROUTINE_TO_EA: *the destination is EA
     move.b      d1,d2 * d2 contains the data register number now.
     jsr         GET_D_REG_DIRECT
 
-    move.b      #44,(a1)+ * print a comma
+    move.b      #COMMA,(a1)+ * print a comma
 
 
     move.l      d0,d2 * load d2
@@ -1179,6 +1205,56 @@ NOTROUTINE_END:
     rts
 
 * End of NOTROUTINE subroutine
+
+LEAROUTINE:
+*Description:
+*Requires a1 to point to buffer.
+*Loads "LEA" into BUFFER and handles its EA.
+*If the EA is invalid, calls DATAROUTINE.
+*input: a6
+*Output: a6, a1, the value pointed to by a1
+    movem.l     A0/A2-A5/D0-D7, -(sp)
+    *could optimize by not copying anything except a2, d0, d7, d2, and d3
+
+    jsr         IS_EA_VALID
+    cmp.l       #-1,d7
+    beq         LEAROUTINE_END
+
+    lea         LEA_OPCODE,a2
+    jsr         COPY_STRING_A2_TO_A1
+
+    *get the register and put in d0
+    move.w      (a6),d0
+    lsl.w       #4,d0
+    lsr.w       #7,d0
+    lsr.w       #6,d0
+
+    *prepare to call GET_EA
+    move.w      (a6)+,d2
+    move.b      #2,d3
+
+    *d2.W is prepared
+    *d3.b is prepared
+    *a6 was incremented and is prepared.
+    jsr         GET_EA
+
+    *print a comma
+    move.b      #COMMA,(a1)+
+
+    *print the address register
+    move.b      d0,d2
+    jsr         GET_A_REG_DIRECT    
+    
+    * end the line and terminate the string
+    lea         LINE_END,a2
+    jsr         COPY_STRING_A2_TO_A1
+    move.b      #0,(a1)+
+
+LEAROUTINE_END:
+    movem.l     (sp)+,A0/A2-A5/D0-D7
+    rts
+
+* End of LEAROUTINE subroutine
 
 DATAROUTINE:
 *Description:
@@ -1341,6 +1417,7 @@ LF                  equ $0A
 INITIAL_COUNT       equ 25
 SPC                 equ 32
 TAB                 equ 9
+COMMA               equ 44
 
 BUFFER
  * an input BUFFER
@@ -1387,7 +1464,10 @@ JSR_OPCODE
 NOT_OPCODE
     dc.b    'NOT.',0
 
-IAM_STRING
+LEA_OPCODE
+    dc.b    'LEA    ',0
+
+IAM_STRING * FIXME: No longer needed. Consider deleting
     dc.b    'IAM',0
 
 ERROR_STRING
