@@ -10,6 +10,9 @@ This file is for documenting questions to the professor and their answers.
 - Is jmp always 3 words?
 - For immediate EA and absolute EA, should we remove the left side zeros when printing or not?
 - Is it okay that i have a line when I wait for the user to continue or not?
+- Can I use Github's wiki?
+- I don't understand how learning assembly makes my code perform better.
+- can I use github's wiki?
 
 
 
@@ -19,3 +22,7 @@ This file is for documenting questions to the professor and their answers.
 
 - We can have subroutines in other files. Read the program requirements slides.
 - Jump tables are explained in the addendum.
+- Possibly, handle the most significant byte of the addresses in a differen way.
+- Just in case, talk about how to resume printing in the documentation.
+- Speed and efficiency don't matter that much.
+- Just print data instead of IAM

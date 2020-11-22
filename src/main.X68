@@ -576,6 +576,65 @@ COPY_STRING_A2_TO_A1_END
     rts
 * End of COPY_STRING_A2_TO_A1
 
+IS_EA_VALID:
+*Description:
+*Determines if the EA of the current op-code at (a6) is valid or not.
+*If the effective address is not valid, then calls DATAROUTINE
+*and returns -1 in d7.l.
+*If the effective address is valid, returns 0 in d7.l
+*Nothing should be affected other than a6, d7.l, a1,
+*and the memory a1 points to.
+*Nothing other than a1 will change
+*Input: a6, a1
+*Output: a6, d7.l, a1, and the memory pointed to by a1.
+    movem.l     d0/d1,-(sp)
+
+
+    move.l      #0,d0
+    move.w      (a6),d0
+
+    lsl.w       #5,d0 * get the least significant six bits
+    lsl.w       #5,d0
+    lsr.w       #5,d0
+    lsr.w       #5,d0
+
+    move.l      d0,d1 * copy to d1.
+
+    lsr.b       #3,d0 * d0 represents the mode from now on.
+    and.b       #7,d1 * d1 represents the register bits from now on.
+
+    cmp.b       #5,d0
+    blt         IS_EA_VALID_TRUE * The first 5 addressing modes are valid.
+
+    cmp.b       #7,d0
+    blt         IS_EA_VALID_FALSE * the sixth and seventh addressing modes are invalid.
+
+    * that leaves the last addressing mode.
+    * I will use the 3 register bits at d1 to make decisions from now on.
+
+    cmp.b       #2,d1 * the first two modes are valid.
+    blt         IS_EA_VALID_TRUE * abs short and abs long
+
+    cmp.b       #4,d1 * the immediate accessing mode.
+    beq         IS_EA_VALID_TRUE
+
+
+    * Any other mode is invalid by this point.
+
+IS_EA_VALID_FALSE:
+    jsr         DATAROUTINE * call dataroutine.
+    move.l      #-1,d7 * return -1 to represent an invalid EA
+    bra         IS_EA_VALID_END
+
+IS_EA_VALID_TRUE:
+    move.l      #0,d7 * return 0 to represent a valid EA
+
+IS_EA_VALID_END:
+    movem.l     (sp)+,d0/d1
+    rts
+* End of IS_EA_VALID
+
+
 GET_LIGHT_PURPLE_SIZE:
 *Description:
 *Given an op-code at (a6) that uses
@@ -587,7 +646,7 @@ GET_LIGHT_PURPLE_SIZE:
 *Output: a1, TEMP_VARIABLE.b
     movem.l     d0/a2,-(sp)
 
-    move.w      (a6),d0 * get the bits at the 6th and 7th index (0-indexing)
+    move.w      (a6),d0 * get the bits at the 6th and 7th index (0-indexing from the right)
     lsl.w       #4,d0
     lsl.w       #4,d0
     lsr.w       #7,d0
@@ -718,7 +777,8 @@ GET_INVALID_ADDRESSING_MODE:
 *Output: a1 and the memory it points to
     movem.l     A2, -(sp)
 
-    lea         IAM_STRING,a2
+    *lea         IAM_STRING,a2
+    lea         ERROR_STRING,a2 * print a clear error message so the programmer may notice.
     jsr         COPY_STRING_A2_TO_A1
 
     movem.l     (sp)+,A2
@@ -793,9 +853,6 @@ GET_EA_100: * indirect address register with pre-increment
     bra         GET_EA_END
 
 GET_EA_101: * Invalid addressing mode
-    jsr         GET_INVALID_ADDRESSING_MODE
-    bra         GET_EA_END
-
 GET_EA_110: * Invalid addressing mode
     jsr         GET_INVALID_ADDRESSING_MODE
     bra         GET_EA_END
@@ -875,6 +932,11 @@ ANDROUTINE:
 *Output: a6, the value pointed to by a1
     movem.l     A0/A2-A5/D0-D7, -(sp)
 
+    * Check the validty of the addressing mode first.
+    jsr         IS_EA_VALID
+    cmp.l       #-1,d7
+    beq         ANDROUTINE_END
+
     lea         AND_OPCODE,a2
     jsr         COPY_STRING_A2_TO_A1 *Copy "DATA: $" into a1
 
@@ -907,7 +969,7 @@ ANDROUTINE:
 
     move.b      d1,d2 * d2 contains the data register number now.
     jsr         GET_D_REG_DIRECT *print the data register
-    bra         ANDROUTINE_END
+    bra         ANDROUTINE_END_LINE
 
 ANDROUTINE_TO_EA: *the destination is EA
     move.l      d2,d0 * save d2
@@ -923,15 +985,17 @@ ANDROUTINE_TO_EA: *the destination is EA
     *d3.b is prepared
     *a6 was incremented and is prepared.
     jsr         GET_EA
-    BRA         ANDROUTINE_END
+    BRA         ANDROUTINE_END_LINE
 
-ANDROUTINE_END:
+ANDROUTINE_END_LINE:
     lea         LINE_END,a2
     jsr         COPY_STRING_A2_TO_A1
     move.b      #0,(a1)+ * ybeltagy: the last line I wrote for ANDROUTINE,
                          * GET_EA, STRING_FROM_BYTE, all the GET addresses subroutines, and
                          * GET_LIGHT_PURPLE_SIZE.
                          * such long days!
+
+ANDROUTINE_END:
     movem.l     (sp)+,A0/A2-A5/D0-D7
     rts
 
@@ -1191,7 +1255,7 @@ INPUT_END_MESSAGE
     dc.b   'Please enter the ending address: ',0
 
 MORE_MEMORY_MESSAGE
-    dc.b    'Finished Disassmebling!',CR,LF,CR,LF
+    dc.b    'Finished Disassembling!',CR,LF,CR,LF
     dc.b    'Do you want to disassemble more?',CR,LF,0
 
 TERMINATION_MESSAGE
@@ -1234,10 +1298,6 @@ PROGRAM_START_MESSAGE
 
 
     END    START        ; last line of source
-
-
-
-
 
 
 *~Font name~Courier New~

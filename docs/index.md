@@ -210,6 +210,18 @@ COPY_STRING_A2_TO_A1:
 *Input: a1, a2
 *Output: a1
 
+IS_EA_VALID:
+*Description:
+*Determines if the EA of the current op-code at (a6) is valid or not.
+*If the effective address is not valid, then calls DATAROUTINE
+*and returns -1 in d7.l.
+*If the effective address is valid, returns 0 in d7.l
+*Nothing should be affected other than a6, d7.l, a1,
+*and the memory a1 points to.
+*Nothing other than a1 will change
+*Input: a6, a1
+*Output: a6, d7.l, a1, and the memory pointed to by a1.
+
 GET_LIGHT_PURPLE_SIZE:
 *Description:
 *Given an op-code at (a6) that uses
