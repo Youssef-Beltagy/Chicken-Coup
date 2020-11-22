@@ -1140,7 +1140,7 @@ JSRROUTINE_END:
 NOTROUTINE:
 *Description:
 *Requires a1 to point to buffer.
-*Loads "NOT" into BUFFER and handles its EA.
+*Loads "NOT" into BUFFER and handles its size and EA.
 *If the EA is invalid, calls DATAROUTINE.
 *input: a6
 *Output: a6, a1, the value pointed to by a1
