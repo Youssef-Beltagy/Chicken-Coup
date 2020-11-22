@@ -15,13 +15,13 @@ The first progress report written by the chickens in Chicken Coup.
 
 ## Work Completed:
 
-We wrote our design [document](https://chicken-coup.ybeltagy.com). It contains a flow chart, design documentation, coding guidelines, and style guidelines.
+We wrote our design [document](https://68k-disassembler.ybeltagy.com). It contains a flow chart, design documentation, coding guidelines, and style guidelines.
 
 We split the program into subroutines, one for every op-code, and a main loop that decides which subroutine to call.
 
 We implemented a string to long subroutine to parse the user's input. We implemented the main loop with error handling but without the required pauses when the screen fills up. We also implemented the NOP opcode subroutine.
 
-![](https://chicken-coup.ybeltagy.com/disassembler_design.png)
+![](https://68k-disassembler.ybeltagy.com/disassembler_design.png)
 
 
 
@@ -55,4 +55,4 @@ This time, I'm (Youssef Beltagy) the only one who contributed. This is okay for 
 
 The number of commits on Github is exaggerated because it includes things like pdf resources that I downloaded from canvas. 
 
-![](progress_report_1.png)
+![](https://68k-disassembler.ybeltagy.com/progress_report_1.png)

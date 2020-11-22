@@ -55,7 +55,7 @@ A list of all required tasks.
 11. [x] LSL
 12. [ ] LSR -- No longer required
 13. [ ] ASL -- No longer required
-14. [xs] ASR
+14. [x] ASR
 15. [x] Bcc     (BLT, BGE, BEQ)
 16. [x] JSR
 17. [x] RTS
