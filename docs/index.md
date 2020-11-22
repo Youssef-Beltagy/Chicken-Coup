@@ -42,7 +42,7 @@ A list of all required tasks.
 
 ## Autumn 2020 Requirement:
 
-1. [x] NOP -- Implemented by Youssef
+1. [x] NOP
 2. [ ] MOVE
 3. [ ] MOVEM
 4. [ ] ADD
@@ -51,16 +51,16 @@ A list of all required tasks.
 7. [ ] DIVU -- No longer required
 8. [ ] LEA
 9. [x] AND
-10. [ ] NOT
+10. [x] NOT
 11. [ ] LSL
 12. [ ] LSR -- No longer required
 13. [ ] ASL -- No longer required
 14. [ ] ASR
 15. [x] Bcc     (BLT, BGE, BEQ)
-16. [ ] JSR
+16. [x] JSR
 17. [x] RTS
 18. [x] BRA
-19. [x] DATA as a defualt
+19. [x] DATA as a default
 
 
 

@@ -11,6 +11,48 @@ START:                  ; first instruction of program
 * FIXME: For Testing, DELETE LATER *============================
     bra         SKIP_TESTS * don't actually run the tests
 
+    jsr         START
+    jmp         START
+    jsr         SKIP_TESTS
+
+    not.b       d0
+    not.w       d1
+    not.l       d2
+    not.b       (a3)
+    not.w       (a4)
+    not.l       (a5)
+    not.b       (a6)+
+    not.w       (a7)+
+    not.l       (a0)+
+    not.b       -(a0)
+    not.w       -(a1)
+    not.w       -(a2)
+    not.b       $00
+    not.w       $ff
+    not.l       $A000
+    not.b       $00000fff
+    not.w       $00aabbcc
+    not.b       (5,a2)
+    not.w       (3,a2,d2)
+    not.l       (3,a5)
+    not.b       (10,a6,d5)
+    jsr         (a0)
+    jsr         (a1)
+    jsr         (a2)
+    jsr         (a3)
+    jsr         (a4)
+    jsr         (a5)
+    jsr         (a6)
+    jsr         (a7)
+    jsr         (a3)
+    jsr         (a4)
+    jsr         $8000
+    jsr         $90
+    jsr         $ff
+    jsr         (10,a5)
+    jsr         (5,a4,d2)
+    jsr         (5,PC)
+    jsr         (2,PC,d4)
     * write your opcodes 
     bra         BCCROUTINE_END
     nop *
@@ -191,6 +233,22 @@ CONTINUE_CHECKING_ANDROUTINE:  * Else, we need to check more.
     bra         MAIN_LOOP_PRINT
 SKIP_ANDROUTINE:
 
+    *Is this JSR
+    move.w      (a6),d0
+    lsr.w       #6,d0
+    cmp.w       #$13a,d0
+    bne         SKIP_JSRROUTINE
+    jsr         JSRROUTINE
+    bra         MAIN_LOOP_PRINT
+SKIP_JSRROUTINE
+
+    move.w      (a6),d0
+    lsr.w       #8,d0
+    cmp.w       #$46,d0
+    bne         SKIP_NOTROUTINE
+    jsr         NOTROUTINE
+    bra         MAIN_LOOP_PRINT
+SKIP_NOTROUTINE:
 
 *put more op-code subroutine calls here.
 *Just like NOPROUTINE
@@ -1007,7 +1065,7 @@ NOPROUTINE:
 *Requires a1 to point to buffer.
 *Loads "NOP" into BUFFER and increments a6 by two bytes
 *input: a6
-*Output: a6, the value pointed to by a1
+*Output: a6, a1, the value pointed to by a1
     movem.l     A0/A2-A5/D0-D7, -(sp)
     *If needed, could optimize memory by not copying anything except a2
 
@@ -1027,7 +1085,7 @@ RTSROUTINE:
 *Requires a1 to point to buffer.
 *Loads "RTS" into BUFFER and increments a6 by two bytes
 *input: a6
-*Output: a6, the value pointed to by a1
+*Output: a6, a1, and the value pointed to by a1
     movem.l     A0/A2-A5/D0-D7, -(sp)
     *If needed, could optimize memory by not copying anything except a2
 
@@ -1041,6 +1099,86 @@ RTSROUTINE:
     rts
 
 * End of RTSROUTINE subroutine
+
+JSRROUTINE:
+*Description:
+*Requires a1 to point to buffer.
+*Loads "JSR" into BUFFER and handles its EA.
+*If the EA is invalid, calls DATAROUTINE.
+*input: a6
+*Output: a6, a1, the value pointed to by a1
+    movem.l     A0/A2-A5/D0-D7, -(sp)
+    *could optimize by not copying anything except a2, d7, d2, and d3
+
+    jsr         IS_EA_VALID
+    cmp.l       #-1,d7
+    beq         JSRROUTINE_END
+
+    lea         JSR_OPCODE,a2
+    jsr         COPY_STRING_A2_TO_A1
+
+    *prepare to call GET_EA
+    move.w      (a6)+,d2
+    move.b      #2,d3
+
+    *d2.W is prepared
+    *d3.b is prepared
+    *a6 was incremented and is prepared.
+    jsr         GET_EA    
+    
+    * end the line and terminate the string
+    lea         LINE_END,a2
+    jsr         COPY_STRING_A2_TO_A1
+    move.b      #0,(a1)+
+
+JSRROUTINE_END:
+    movem.l     (sp)+,A0/A2-A5/D0-D7
+    rts
+
+* End of JSRROUTINE subroutine
+
+NOTROUTINE:
+*Description:
+*Requires a1 to point to buffer.
+*Loads "NOT" into BUFFER and handles its EA.
+*If the EA is invalid, calls DATAROUTINE.
+*input: a6
+*Output: a6, a1, the value pointed to by a1
+    movem.l     A0/A2-A5/D0-D7, -(sp)
+    *could optimize by not copying anything except a2, d7, d2, and d3
+
+    jsr         IS_EA_VALID
+    cmp.l       #-1,d7
+    beq         NOTROUTINE_END
+
+    lea         NOT_OPCODE,a2
+    jsr         COPY_STRING_A2_TO_A1
+
+    * Get the size in TEMP_VARIABLE
+    jsr         GET_LIGHT_PURPLE_SIZE
+
+    move.b      #SPC,(a1)+ * Leave some spaces to print beautifully.
+    move.b      #SPC,(a1)+
+
+    *prepare to call GET_EA
+    move.w      (a6)+,d2
+    move.b      TEMP_VARIABLE,d3
+
+    *d2.W is prepared
+    *d3.b is prepared
+    *a6 was incremented and is prepared.
+    jsr         GET_EA    
+    
+    * end the line and terminate the string
+    lea         LINE_END,a2
+    jsr         COPY_STRING_A2_TO_A1
+    move.b      #0,(a1)+
+
+NOTROUTINE_END:
+    movem.l     (sp)+,A0/A2-A5/D0-D7
+    rts
+
+* End of NOTROUTINE subroutine
 
 DATAROUTINE:
 *Description:
@@ -1243,6 +1381,12 @@ RTS_OPCODE
 AND_OPCODE
     dc.b    'AND.',0
 
+JSR_OPCODE
+    dc.b    'JSR    ',0
+
+NOT_OPCODE
+    dc.b    'NOT.',0
+
 IAM_STRING
     dc.b    'IAM',0
 
@@ -1299,6 +1443,7 @@ PROGRAM_START_MESSAGE
 
 
     END    START        ; last line of source
+
 
 
 *~Font name~Courier New~
