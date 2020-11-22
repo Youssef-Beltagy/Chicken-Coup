@@ -15,11 +15,27 @@ START:                  ; first instruction of program
     jmp         START
     jsr         SKIP_TESTS
 
+    muls        d0,d1
+    muls.w      d2,d3
+    muls        (a0),d4
+    muls        (a1)+,d5
+    muls        -(a2),d6
+    muls        $F0F0,d7
+    muls        $01,d0
+    muls        #$01,d1
+    muls        #$20,d2
+    muls        #$aefa,d3
+    muls        #$1102,d4
+    muls        (10,a2,d3),d5
+    muls        ($a,a4),d6
+    muls        (10,pc,d3),d7
+    muls        ($b,pc),d0
+
     lea         START,a0
     lea         $00,a1
     lea         $ff,a2
     lea         $1000,a3
-    lea         $A000,a4
+    lea         $abcd,a4
     lea         $8000,a5
     lea         (a6),a7
     lea         (a7),a2
@@ -275,6 +291,17 @@ SKIP_NOTROUTINE:
     jsr         LEAROUTINE
     bra         MAIN_LOOP_PRINT
 SKIP_LEAROUTINE:
+
+*Is this MULS
+    move.w      (a6),d0
+    lsr.w       #4,d0
+    lsl.b       #3,d0
+    lsr.w       #5,d0
+    cmp.w       #$67,d0
+    bne         SKIP_MULSROUTINE
+    jsr         MULSROUTINE
+    bra         MAIN_LOOP_PRINT
+SKIP_MULSROUTINE:
 
 *put more op-code subroutine calls here.
 *Just like NOPROUTINE
@@ -1256,6 +1283,55 @@ LEAROUTINE_END:
 
 * End of LEAROUTINE subroutine
 
+MULSROUTINE:
+*Description:
+*Requires a1 to point to buffer.
+*Loads "MULS" into BUFFER and handles its EA.
+*If the EA is invalid, calls DATAROUTINE.
+*input: a6
+*Output: a6, a1, the value pointed to by a1
+    movem.l     A0/A2-A5/D0-D7, -(sp)
+    *could optimize by not copying anything except a2, d0, d7, d2, and d3
+
+    jsr         IS_EA_VALID
+    cmp.l       #-1,d7
+    beq         MULSROUTINE_END
+
+    lea         MULS_OPCODE,a2
+    jsr         COPY_STRING_A2_TO_A1
+
+    *get the register and put in d0
+    move.w      (a6),d0
+    lsl.w       #4,d0
+    lsr.w       #7,d0
+    lsr.w       #6,d0
+
+    *prepare to call GET_EA
+    move.w      (a6)+,d2
+    move.b      #1,d3
+
+    *d2.W is prepared
+    *d3.b is prepared
+    *a6 was incremented and is prepared.
+    jsr         GET_EA
+
+    *print a comma
+    move.b      #COMMA,(a1)+
+
+    *print the data register
+    move.b      d0,d2
+    jsr         GET_D_REG_DIRECT    
+    
+    * end the line and terminate the string
+    lea         LINE_END,a2
+    jsr         COPY_STRING_A2_TO_A1
+    move.b      #0,(a1)+
+
+MULSROUTINE_END:
+    movem.l     (sp)+,A0/A2-A5/D0-D7
+    rts
+* End of MULSROUTINE subroutine
+
 DATAROUTINE:
 *Description:
 *Loads "DATA: $" then the hex value of the word at (a6)
@@ -1467,6 +1543,9 @@ NOT_OPCODE
 LEA_OPCODE
     dc.b    'LEA    ',0
 
+MULS_OPCODE
+    dc.b    'MULS   ',0
+
 IAM_STRING * FIXME: No longer needed. Consider deleting
     dc.b    'IAM',0
 
@@ -1523,6 +1602,8 @@ PROGRAM_START_MESSAGE
 
 
     END    START        ; last line of source
+
+
 
 
 

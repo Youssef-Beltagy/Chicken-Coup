@@ -12,7 +12,14 @@ This file is for documenting questions to the professor and their answers.
 - Is it okay that i have a line when I wait for the user to continue or not?
 - Can I use Github's wiki?
 - I don't understand how learning assembly makes my code perform better.
-- can I use github's wiki?
+- can I use github's wiki? Yes, but add the grader.
+- Ask about added grader.
+- Do we have to implement muls for word only or for word and long?
+- Do we print muls as muls or as muls.w?
+- Ask about images.
+- How to test BRA Long? We don't have big enough files.
+- Ask about bug in the main.
+
 
 
 
