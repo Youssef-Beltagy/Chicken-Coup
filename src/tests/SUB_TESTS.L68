@@ -1,0 +1,99 @@
+00008000 Starting Address
+Assembler used: EASy68K Editor/Assembler v5.16.01
+Created On: 11/26/2020 4:12:39 AM
+
+00000000                             1  *-----------------------------------------------------------
+00000000                             2  * Title      : SUBROUTINE TESTS
+00000000                             3  * Written by : YOUSSEF BELTAGY
+00000000                             4  * Date       : 11/13/2020
+00000000                             5  * Description: More detailed tests for SUBROUTINE and the GET_EA subroutines.
+00000000                             6  *-----------------------------------------------------------
+00008000                             7      ORG    $8000
+00008000                             8  START:                  ; first instruction of program
+00008000                             9  
+00008000                            10      *sub tests
+00008000  9000                      11      sub.b       d0,d0 * simple direct data register tests.
+00008002  9240                      12      sub.w       d0,d1
+00008004  9480                      13      sub.l       d0,d2
+00008006  9600                      14      sub.b       d0,d3
+00008008  9840                      15      sub.w       d0,d4
+0000800A  9A80                      16      sub.l       d0,d5
+0000800C  9C00                      17      sub.b       d0,d6
+0000800E  9E40                      18      sub.w       d0,d7
+00008010                            19      
+00008010  C544                      20      exg         d2,d4 * can you distinguish sub from other op-codes?
+00008012                            21  
+00008012  9000                      22      sub.b       d0,d0
+00008014  9241                      23      sub.w       d1,d1
+00008016  9482                      24      sub.l       d2,d2
+00008018  9603                      25      sub.b       d3,d3
+0000801A  9844                      26      sub.w       d4,d4
+0000801C  9A85                      27      sub.l       d5,d5
+0000801E  9C06                      28      sub.b       d6,d6
+00008020  9E47                      29      sub.w       d7,d7
+00008022                            30      
+00008022  CF8D                      31      exg         a5,d7 *can you distinguish sub from other op-codes?
+00008024                            32  
+00008024                            33      
+00008024  9439 00008000             34      sub.b       $8000,d2 * long absolute
+0000802A  9678 0021                 35      sub.w       $0021,d3 * short absolute
+0000802E  9939 0000D040             36      sub.b       d4,$D040 * long absolute
+00008034  9B78 5029                 37      sub.w       d5,$5029 * short absolute
+00008038                            38      
+00008038  C702                      39      abcd        d2,d3 *can you distinguish sub from other op-codes?
+0000803A                            40      
+0000803A  5F83                      41      sub.l       #$7,d3    *immediate
+0000803C  0447 0010                 42      sub.w       #$10,d7   *immediate word
+00008040  0403 0060                 43      sub.b       #$60,d3   *immediate byte
+00008044  0484 00000234             44      sub.l       #$00234,d4 * immediate long
+0000804A  0485 000FF234             45      sub.l       #$ff234,d5 * immediate long
+00008050                            46      
+00008050  CBC2                      47      muls        d2,d5 *can you distinguish sub from other op-codes?
+00008052                            48      
+00008052  9016                      49      sub.b       (a6),d0 * indirect tests
+00008054  9A50                      50      sub.w       (a0),d5
+00008056  9E57                      51      sub.w      (a7),d7
+00008058  9517                      52      sub.b       d2,(a7)
+0000805A  9F55                      53      sub.w       d7,(a5)
+0000805C  9D91                      54      sub.l       d6,(a1)
+0000805E                            55      
+0000805E  CAC2                      56      mulu        d2,d5 *can you distinguish sub from other op-codes?
+00008060                            57      
+00008060  981A                      58      sub.b       (a2)+,d4 * indirect tests with post-increment
+00008062  945B                      59      sub.w       (a3)+,d2
+00008064  9C5C                      60      sub.w      (a4)+,d6
+00008066  9B18                      61      sub.b       d5,(a0)+
+00008068  935E                      62      sub.w       d1,(a6)+
+0000806A  9799                      63      sub.l       d3,(a1)+
+0000806C                            64      
+0000806C  9225                      65      sub.b       -(a5),d1 * indirect tests with pre-decrement
+0000806E  9464                      66      sub.w       -(a4),d2
+00008070  9662                      67      sub.w      -(a2),d3
+00008072  9921                      68      sub.b       d4,-(a1)
+00008074  9B66                      69      sub.w       d5,-(a6)
+00008076  9DA3                      70      sub.l       d6,-(a3)
+00008078                            71      
+00008078  98B3 2000                 72      sub.l       (0,a3,d2),d4 * let's  break it.
+0000807C  9FB4 0005                 73      sub.l       d7,(5,a4,d0)
+00008080  9C7B 60FE                 74      sub.w       (3,pc,d6),d6
+00008084  9E7B 40FE                 75      sub.w       (7,PC,d4),d7
+00008088                            76  
+00008088  94C2                      77      suba.w      d2,a2
+0000808A  9BCB                      78      suba.l      a3,a5
+0000808C  9B8B                      79      subx.l      -(a3),-(a5)
+0000808E  9583                      80      subx.l      d3,d2
+00008090                            81  
+00008090  FFFF FFFF                 82      SIMHALT             ; halt simulator
+00008094                            83  
+00008094                            84  * Put variables sub constants here
+00008094                            85  
+00008094                            86      END    START        ; last line of source
+
+No errors detected
+No warnings generated
+
+
+SYMBOL TABLE INFORMATION
+Symbol-name         Value
+-------------------------
+START               8000

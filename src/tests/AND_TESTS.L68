@@ -1,0 +1,96 @@
+00008000 Starting Address
+Assembler used: EASy68K Editor/Assembler v5.16.01
+Created On: 11/26/2020 3:52:04 AM
+
+00000000                             1  *-----------------------------------------------------------
+00000000                             2  * Title      : ANDROUTINE TESTS
+00000000                             3  * Written by : YOUSSEF BELTAGY
+00000000                             4  * Date       : 11/13/2020
+00000000                             5  * Description: More detailed tests for ANDROUTINE and the GET_EA subroutines.
+00000000                             6  *-----------------------------------------------------------
+00008000                             7      ORG    $8000
+00008000                             8  START:                  ; first instruction of program
+00008000                             9  
+00008000                            10      *AND tests
+00008000  C000                      11      and.b       d0,d0 * simple direct data register tests.
+00008002  C240                      12      and.w       d0,d1
+00008004  C480                      13      and.l       d0,d2
+00008006  C600                      14      and.b       d0,d3
+00008008  C840                      15      and.w       d0,d4
+0000800A  CA80                      16      and.l       d0,d5
+0000800C  CC00                      17      and.b       d0,d6
+0000800E  CE40                      18      and.w       d0,d7
+00008010                            19      
+00008010  C544                      20      exg         d2,d4 * can you distinguish and from other op-codes?
+00008012                            21  
+00008012  C000                      22      and.b       d0,d0
+00008014  C241                      23      and.w       d1,d1
+00008016  C482                      24      and.l       d2,d2
+00008018  C603                      25      and.b       d3,d3
+0000801A  C844                      26      and.w       d4,d4
+0000801C  CA85                      27      and.l       d5,d5
+0000801E  CC06                      28      and.b       d6,d6
+00008020  CE47                      29      and.w       d7,d7
+00008022                            30      
+00008022  CF8D                      31      exg         a5,d7 *can you distinguish and from other op-codes?
+00008024                            32  
+00008024                            33      
+00008024  C439 00008000             34      and.b       $8000,d2 * long absolute
+0000802A  C678 0021                 35      and.w       $0021,d3 * short absolute
+0000802E  C939 0000D040             36      and.b       d4,$D040 * long absolute
+00008034  CB78 5029                 37      and.w       d5,$5029 * short absolute
+00008038                            38      
+00008038  C702                      39      abcd        d2,d3 *can you distinguish and from other op-codes?
+0000803A                            40      
+0000803A  C6BC 00000007             41      and.l       #$7,d3    *immediate
+00008040  CE7C 0010                 42      and.w       #$10,d7   *immediate word
+00008044  C63C 0060                 43      and.b       #$60,d3   *immediate byte
+00008048  C8BC 00000234             44      and.l       #$00234,d4 * immediate long
+0000804E  CABC 000FF234             45      and.l       #$ff234,d5 * immediate long
+00008054                            46      
+00008054  CBC2                      47      muls        d2,d5 *can you distinguish and from other op-codes?
+00008056                            48      
+00008056  C016                      49      and.b       (a6),d0 * indirect tests
+00008058  CA50                      50      and.w       (a0),d5
+0000805A  CE57                      51      and.w      (a7),d7
+0000805C  C517                      52      and.b       d2,(a7)
+0000805E  CF55                      53      and.w       d7,(a5)
+00008060  CD91                      54      and.l       d6,(a1)
+00008062                            55      
+00008062  CAC2                      56      mulu        d2,d5 *can you distinguish and from other op-codes?
+00008064                            57      
+00008064  C81A                      58      and.b       (a2)+,d4 * indirect tests with post-increment
+00008066  C45B                      59      and.w       (a3)+,d2
+00008068  CC5C                      60      and.w      (a4)+,d6
+0000806A  CB18                      61      and.b       d5,(a0)+
+0000806C  C35E                      62      and.w       d1,(a6)+
+0000806E  C799                      63      and.l       d3,(a1)+
+00008070                            64      
+00008070  C225                      65      and.b       -(a5),d1 * indirect tests with pre-decrement
+00008072  C464                      66      and.w       -(a4),d2
+00008074  C662                      67      and.w      -(a2),d3
+00008076  C921                      68      and.b       d4,-(a1)
+00008078  CB66                      69      and.w       d5,-(a6)
+0000807A  CDA3                      70      and.l       d6,-(a3)
+0000807C                            71      
+0000807C  C8B3 2000                 72      and.l       (0,a3,d2),d4 * let's  break it.
+00008080  CFB4 0005                 73      and.l       d7,(5,a4,d0)
+00008084  CC7B 60FE                 74      and.w       (3,pc,d6),d6
+00008088  CE7B 40FE                 75      and.w       (7,PC,d4),d7
+0000808C                            76      
+0000808C                            77  
+0000808C                            78  
+0000808C  FFFF FFFF                 79      SIMHALT             ; halt simulator
+00008090                            80  
+00008090                            81  * Put variables and constants here
+00008090                            82  
+00008090                            83      END    START        ; last line of source
+
+No errors detected
+No warnings generated
+
+
+SYMBOL TABLE INFORMATION
+Symbol-name         Value
+-------------------------
+START               8000

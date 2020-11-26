@@ -33,3 +33,6 @@ This file is for documenting questions to the professor and their answers.
 - Speed and efficiency don't matter that much.
 - Just print data instead of IAM
 - The index page is somewhat outdated. Remember to update it.
+- AND, ADD, and SUB are incredibly similar. One subroutine can be used for all three.
+- ASR and LSL are incredibly similar. Refactor them to reuse code.
+- Check whether NOT and JSR are similar or not.

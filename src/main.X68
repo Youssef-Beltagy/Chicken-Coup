@@ -10,8 +10,11 @@ START:                  ; first instruction of program
 
 * FIXME: For Testing, DELETE LATER *============================
     bra         SKIP_TESTS * don't actually run the tests
+    bra         $1002
+    bra         $1102
     jsr         START
     jmp         START
+    jmp         SKIP_TESTS
     jsr         SKIP_TESTS
 
     asr         (a0)
@@ -463,6 +466,61 @@ CONTINUE_ASRROUTINE:
 SKIP_ASRROUTINE:
 
     
+    *Is this add?
+    move.w      (a6),d0
+    lsr.w       #6,d0
+    lsr.w       #6,d0
+    cmp.b       #$d,d0
+    bne         SKIP_ADDROUTINE
+
+    move.w      (a6),d0
+    lsr.w       #6,d0
+    and.w       #3,d0
+    cmp.w       #3,d0
+    beq         SKIP_ADDROUTINE
+
+    move.w      (a6),d0
+    btst        #8,d0
+    bne         CONTINUE_ADDROUTINE
+    jsr         ADDROUTINE 
+    bra         MAIN_LOOP_PRINT
+CONTINUE_ADDROUTINE:
+
+    lsr.w       #3,d0
+    and.w       #7,d0
+    cmp.w       #2,d0
+    blt         SKIP_ADDROUTINE
+    jsr         ADDROUTINE 
+    bra         MAIN_LOOP_PRINT
+SKIP_ADDROUTINE:
+
+    *Is this sub?
+    move.w      (a6),d0
+    lsr.w       #6,d0
+    lsr.w       #6,d0
+    cmp.b       #$9,d0
+    bne         SKIP_SUBROUTINE
+
+    move.w      (a6),d0
+    lsr.w       #6,d0
+    and.w       #3,d0
+    cmp.w       #3,d0
+    beq         SKIP_SUBROUTINE
+
+    move.w      (a6),d0
+    btst        #8,d0
+    bne         CONTINUE_SUBROUTINE
+    jsr         SUBROUTINE 
+    bra         MAIN_LOOP_PRINT
+CONTINUE_SUBROUTINE:
+
+    lsr.w       #3,d0
+    and.w       #7,d0
+    cmp.w       #2,d0
+    blt         SKIP_SUBROUTINE
+    jsr         SUBROUTINE 
+    bra         MAIN_LOOP_PRINT
+SKIP_SUBROUTINE:
 
 *put more op-code subroutine calls here.
 *Just like NOPROUTINE
@@ -1192,7 +1250,76 @@ GET_EA_END:
 
 * End of GET_EA subroutine
 
-* Op-cdoe Subroutines
+LIKE_ANDROUTINE:
+*Description:
+*For op-codes that are structured like and, 
+*loads the size and the effective addressing modes into
+*buffer and makes a6 point to the next op-code.
+*Requires a1 to point to buffer.
+*Assumes the effective addressing mode is valid.
+*Assume the op-code is printed.
+*input: a6
+*Output: a6, a1, and the value pointed to by a1
+    movem.l     d0-d3/a2, -(sp) *TODO: check that everything used is copied.
+
+    jsr         GET_LIGHT_PURPLE_SIZE * prints the size and sets TEMP_VARIABLE.b.
+    move.b      TEMP_VARIABLE,d3 * set d3.b for future use. Don't use it from now on.
+
+
+    move.b      #SPC,(a1)+ * Leave some spaces to print beautifully.
+    move.b      #SPC,(a1)+
+
+    move.w      (a6)+,d2 * make d2.w contain the instruction and increment a6
+
+    move.l      #0,d1 * clear d1
+    move.w      d2,d1 * copy the instruction.
+    lsl.w       #4,d1 * Make d1 contain the number of the data register.
+    lsr.w       #6,d1
+    lsr.w       #7,d1
+
+    btst        #8,d2
+    bne         LIKE_ANDROUTINE_TO_EA * the destination is EA.
+
+    *The destionation is Dn.
+
+    *d2.W is prepared
+    *d3.b is prepared
+    *a6 was incremented and is prepared.
+    jsr         GET_EA  * print the effective address
+
+    move.b      #COMMA,(a1)+ * print a comma
+
+    move.b      d1,d2 * d2 contains the data register number now.
+    jsr         GET_D_REG_DIRECT *print the data register
+    bra         LIKE_ANDROUTINE_END_LINE
+
+LIKE_ANDROUTINE_TO_EA: *the destination is EA
+    move.l      d2,d0 * save d2
+    move.b      d1,d2 * d2 contains the data register number now.
+    jsr         GET_D_REG_DIRECT
+
+    move.b      #COMMA,(a1)+ * print a comma
+
+
+    move.l      d0,d2 * load d2
+
+    *d2.W is prepared
+    *d3.b is prepared
+    *a6 was incremented and is prepared.
+    jsr         GET_EA
+    BRA         LIKE_ANDROUTINE_END_LINE
+
+LIKE_ANDROUTINE_END_LINE:
+    lea         LINE_END,a2
+    jsr         COPY_STRING_A2_TO_A1
+    move.b      #0,(a1)+
+
+LIKE_ANDROUTINE_END:
+    movem.l     (sp)+,d0-d3/a2
+    rts
+* End of LIKE_ANDROUTINE subroutine
+
+* Op-code Subroutines
 *-----------------------------------------------------------
 * Put your Op-Code Subroutine here
 
@@ -1211,62 +1338,9 @@ ANDROUTINE:
     beq         ANDROUTINE_END
 
     lea         AND_OPCODE,a2
-    jsr         COPY_STRING_A2_TO_A1 *Copy "DATA: $" into a1
+    jsr         COPY_STRING_A2_TO_A1 *Copy "AND." into a1
 
-    jsr         GET_LIGHT_PURPLE_SIZE * prints the size and sets TEMP_VARIABLE.b.
-    move.b      TEMP_VARIABLE,d3 * set d3.b for future use. Don't use it from now on.
-
-
-    move.b      #SPC,(a1)+ * Leave some spaces to print beautifully.
-    move.b      #SPC,(a1)+
-
-    move.w      (a6)+,d2 * make d2.w contain the instruction and increment a6
-
-    move.l      #0,d1 * clear d4
-    move.w      d2,d1 * copy the instruction.
-    lsl.w       #4,d1 * Make d4 contain the number of the data register.
-    lsr.w       #6,d1
-    lsr.w       #7,d1
-
-    btst        #8,d2
-    bne         ANDROUTINE_TO_EA * the destination is EA.
-
-    *The destionation is Dn.
-
-    *d2.W is prepared
-    *d3.b is prepared
-    *a6 was incremented and is prepared.
-    jsr         GET_EA  * print the effective address
-
-    move.b      #COMMA,(a1)+ * print a comma
-
-    move.b      d1,d2 * d2 contains the data register number now.
-    jsr         GET_D_REG_DIRECT *print the data register
-    bra         ANDROUTINE_END_LINE
-
-ANDROUTINE_TO_EA: *the destination is EA
-    move.l      d2,d0 * save d2
-    move.b      d1,d2 * d2 contains the data register number now.
-    jsr         GET_D_REG_DIRECT
-
-    move.b      #COMMA,(a1)+ * print a comma
-
-
-    move.l      d0,d2 * load d2
-
-    *d2.W is prepared
-    *d3.b is prepared
-    *a6 was incremented and is prepared.
-    jsr         GET_EA
-    BRA         ANDROUTINE_END_LINE
-
-ANDROUTINE_END_LINE:
-    lea         LINE_END,a2
-    jsr         COPY_STRING_A2_TO_A1
-    move.b      #0,(a1)+ * ybeltagy: the last line I wrote for ANDROUTINE,
-                         * GET_EA, STRING_FROM_BYTE, all the GET addresses subroutines, and
-                         * GET_LIGHT_PURPLE_SIZE.
-                         * such long days!
+    jsr         LIKE_ANDROUTINE
 
 ANDROUTINE_END:
     movem.l     (sp)+,A0/A2-A5/D0-D7
@@ -1333,7 +1407,7 @@ JSRROUTINE:
 
     *prepare to call GET_EA
     move.w      (a6)+,d2
-    move.b      #2,d3
+    move.b      #2,d3 * FIXME: setting the size is meaningless.
 
     *d2.W is prepared
     *d3.b is prepared
@@ -1735,6 +1809,57 @@ DATAROUTINE:
 
 * End of DATAROUTINE subroutine
 
+
+ADDROUTINE:
+*Description:
+*Loads "ADD", then the size and the effective addressing modes into
+*into buffer and makes a6 point to the next op-code.
+*Requires a1 to point to buffer.
+*input: a6
+*Output: a6, a1, and the value pointed to by a1
+    movem.l     A0/A2-A5/D0-D7, -(sp)
+
+    * Check the validty of the addressing mode first.
+    jsr         IS_EA_VALID
+    cmp.l       #-1,d7
+    beq         ADDROUTINE_END
+
+    lea         ADD_OPCODE,a2
+    jsr         COPY_STRING_A2_TO_A1 *Copy "AND." into a1
+
+    jsr         LIKE_ANDROUTINE * ADD is structured like AND
+
+ADDROUTINE_END:
+    movem.l     (sp)+,A0/A2-A5/D0-D7
+    rts
+* End of ADDROUTINE subroutine
+
+SUBROUTINE:
+*Description:
+*Loads "SUB.", then the size and the effective addressing modes into
+*into buffer and makes a6 point to the next op-code.
+*Requires a1 to point to buffer.
+*input: a6
+*Output: a6, a1, and the value pointed to by a1
+    movem.l     A0/A2-A5/D0-D7, -(sp)
+
+    * Check the validty of the addressing mode first.
+    jsr         IS_EA_VALID
+    cmp.l       #-1,d7
+    beq         SUBROUTINE_END
+
+    lea         SUB_OPCODE,a2
+    jsr         COPY_STRING_A2_TO_A1 *Copy "AND." into a1
+
+    jsr         LIKE_ANDROUTINE * SUB is structured like AND
+
+SUBROUTINE_END:
+    movem.l     (sp)+,A0/A2-A5/D0-D7
+    rts
+
+* End of SUBROUTINE subroutine
+
+
 BCCROUTINE:
 *Description:
 *HANDLES BRA, BLT, BEQ, BGE
@@ -1928,6 +2053,12 @@ LSL_OPCODE
 ASR_OPCODE
     dc.b    'ASR',0
 
+ADD_OPCODE
+    dc.b    'ADD.',0
+
+SUB_OPCODE
+    dc.b    'SUB.',0
+
 IAM_STRING * FIXME: No longer needed. Consider deleting
     dc.b    'IAM',0
 
@@ -1984,9 +2115,6 @@ PROGRAM_START_MESSAGE
 
 
     END    START        ; last line of source
-
-
-
 
 
 

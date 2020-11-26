@@ -1,0 +1,99 @@
+00008000 Starting Address
+Assembler used: EASy68K Editor/Assembler v5.16.01
+Created On: 11/26/2020 3:39:05 AM
+
+00000000                             1  *-----------------------------------------------------------
+00000000                             2  * Title      : ADDROUTINE TESTS
+00000000                             3  * Written by : YOUSSEF BELTAGY
+00000000                             4  * Date       : 11/13/2020
+00000000                             5  * Description: More detailed tests for ADDROUTINE and the GET_EA subroutines.
+00000000                             6  *-----------------------------------------------------------
+00008000                             7      ORG    $8000
+00008000                             8  START:                  ; first instruction of program
+00008000                             9  
+00008000                            10      *add tests
+00008000  D000                      11      add.b       d0,d0 * simple direct data register tests.
+00008002  D240                      12      add.w       d0,d1
+00008004  D480                      13      add.l       d0,d2
+00008006  D600                      14      add.b       d0,d3
+00008008  D840                      15      add.w       d0,d4
+0000800A  DA80                      16      add.l       d0,d5
+0000800C  DC00                      17      add.b       d0,d6
+0000800E  DE40                      18      add.w       d0,d7
+00008010                            19      
+00008010  C544                      20      exg         d2,d4 * can you distinguish add from other op-codes?
+00008012                            21  
+00008012  D000                      22      add.b       d0,d0
+00008014  D241                      23      add.w       d1,d1
+00008016  D482                      24      add.l       d2,d2
+00008018  D603                      25      add.b       d3,d3
+0000801A  D844                      26      add.w       d4,d4
+0000801C  DA85                      27      add.l       d5,d5
+0000801E  DC06                      28      add.b       d6,d6
+00008020  DE47                      29      add.w       d7,d7
+00008022                            30      
+00008022  CF8D                      31      exg         a5,d7 *can you distinguish add from other op-codes?
+00008024                            32  
+00008024                            33      
+00008024  D439 00008000             34      add.b       $8000,d2 * long absolute
+0000802A  D678 0021                 35      add.w       $0021,d3 * short absolute
+0000802E  D939 0000D040             36      add.b       d4,$D040 * long absolute
+00008034  DB78 5029                 37      add.w       d5,$5029 * short absolute
+00008038                            38      
+00008038  C702                      39      abcd        d2,d3 *can you distinguish add from other op-codes?
+0000803A                            40      
+0000803A  5E83                      41      add.l       #$7,d3    *immediate
+0000803C  0647 0010                 42      add.w       #$10,d7   *immediate word
+00008040  0603 0060                 43      add.b       #$60,d3   *immediate byte
+00008044  0684 00000234             44      add.l       #$00234,d4 * immediate long
+0000804A  0685 000FF234             45      add.l       #$ff234,d5 * immediate long
+00008050                            46      
+00008050  CBC2                      47      muls        d2,d5 *can you distinguish add from other op-codes?
+00008052                            48      
+00008052  D016                      49      add.b       (a6),d0 * indirect tests
+00008054  DA50                      50      add.w       (a0),d5
+00008056  DE57                      51      add.w      (a7),d7
+00008058  D517                      52      add.b       d2,(a7)
+0000805A  DF55                      53      add.w       d7,(a5)
+0000805C  DD91                      54      add.l       d6,(a1)
+0000805E                            55      
+0000805E  CAC2                      56      mulu        d2,d5 *can you distinguish add from other op-codes?
+00008060                            57      
+00008060  D81A                      58      add.b       (a2)+,d4 * indirect tests with post-increment
+00008062  D45B                      59      add.w       (a3)+,d2
+00008064  DC5C                      60      add.w      (a4)+,d6
+00008066  DB18                      61      add.b       d5,(a0)+
+00008068  D35E                      62      add.w       d1,(a6)+
+0000806A  D799                      63      add.l       d3,(a1)+
+0000806C                            64      
+0000806C  D225                      65      add.b       -(a5),d1 * indirect tests with pre-decrement
+0000806E  D464                      66      add.w       -(a4),d2
+00008070  D662                      67      add.w      -(a2),d3
+00008072  D921                      68      add.b       d4,-(a1)
+00008074  DB66                      69      add.w       d5,-(a6)
+00008076  DDA3                      70      add.l       d6,-(a3)
+00008078                            71      
+00008078  D8B3 2000                 72      add.l       (0,a3,d2),d4 * let's  break it.
+0000807C  DFB4 0005                 73      add.l       d7,(5,a4,d0)
+00008080  DC7B 60FE                 74      add.w       (3,pc,d6),d6
+00008084  DE7B 40FE                 75      add.w       (7,PC,d4),d7
+00008088                            76  
+00008088  D4C2                      77      adda.w      d2,a2
+0000808A  DB8B                      78      addx.l      -(a3),-(a5)
+0000808C  D583                      79      addx.l      d3,d2
+0000808E                            80  
+0000808E                            81  
+0000808E  FFFF FFFF                 82      SIMHALT             ; halt simulator
+00008092                            83  
+00008092                            84  * Put variables add constants here
+00008092                            85  
+00008092                            86      END    START        ; last line of source
+
+No errors detected
+No warnings generated
+
+
+SYMBOL TABLE INFORMATION
+Symbol-name         Value
+-------------------------
+START               8000
