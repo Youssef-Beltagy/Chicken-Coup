@@ -17,8 +17,6 @@ START:                  ; first instruction of program
     add.b       d0,d6
     add.w       d0,d7
     
-    exg         d2,d4 * can you distinguish add from other op-codes?
-
     add.b       d0,d0
     add.w       d1,d1
     add.l       d2,d2
@@ -28,33 +26,24 @@ START:                  ; first instruction of program
     add.b       d6,d6
     add.w       d7,d7
     
-    exg         a5,d7 *can you distinguish add from other op-codes?
-
-    
     add.b       $8000,d2 * long absolute
     add.w       $0021,d3 * short absolute
     add.b       d4,$D040 * long absolute
     add.w       d5,$5029 * short absolute
-    
-    abcd        d2,d3 *can you distinguish add from other op-codes?
-    
+        
     add.l       #$7,d3    *immediate
     add.w       #$10,d7   *immediate word
     add.b       #$60,d3   *immediate byte
     add.l       #$00234,d4 * immediate long
     add.l       #$ff234,d5 * immediate long
-    
-    muls        d2,d5 *can you distinguish add from other op-codes?
-    
+        
     add.b       (a6),d0 * indirect tests
     add.w       (a0),d5
     add.w      (a7),d7
     add.b       d2,(a7)
     add.w       d7,(a5)
     add.l       d6,(a1)
-    
-    mulu        d2,d5 *can you distinguish add from other op-codes?
-    
+        
     add.b       (a2)+,d4 * indirect tests with post-increment
     add.w       (a3)+,d2
     add.w      (a4)+,d6

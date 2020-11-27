@@ -28,7 +28,7 @@ This file is for documenting questions to the professor and their answers.
 
 - We can have subroutines in other files. Read the program requirements slides.
 - Jump tables are explained in the addendum.
-- Possibly, handle the most significant byte of the addresses in a differen way.
+- Possibly, handle the most significant byte of the addresses in a different way.
 - Just in case, talk about how to resume printing in the documentation.
 - Speed and efficiency don't matter that much.
 - Just print data instead of IAM
@@ -36,3 +36,5 @@ This file is for documenting questions to the professor and their answers.
 - AND, ADD, and SUB are incredibly similar. One subroutine can be used for all three.
 - ASR and LSL are incredibly similar. Refactor them to reuse code.
 - Check whether NOT and JSR are similar or not.
+- Review MOVE and MOVEM to ensure I didn't make mistakes.
+- Fix the rest of the indentations

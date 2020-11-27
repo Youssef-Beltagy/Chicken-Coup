@@ -17,8 +17,6 @@ START:                  ; first instruction of program
     sub.b       d0,d6
     sub.w       d0,d7
     
-    exg         d2,d4 * can you distinguish sub from other op-codes?
-
     sub.b       d0,d0
     sub.w       d1,d1
     sub.l       d2,d2
@@ -28,33 +26,24 @@ START:                  ; first instruction of program
     sub.b       d6,d6
     sub.w       d7,d7
     
-    exg         a5,d7 *can you distinguish sub from other op-codes?
-
-    
     sub.b       $8000,d2 * long absolute
     sub.w       $0021,d3 * short absolute
     sub.b       d4,$D040 * long absolute
     sub.w       d5,$5029 * short absolute
-    
-    abcd        d2,d3 *can you distinguish sub from other op-codes?
-    
+        
     sub.l       #$7,d3    *immediate
     sub.w       #$10,d7   *immediate word
     sub.b       #$60,d3   *immediate byte
     sub.l       #$00234,d4 * immediate long
     sub.l       #$ff234,d5 * immediate long
-    
-    muls        d2,d5 *can you distinguish sub from other op-codes?
-    
+        
     sub.b       (a6),d0 * indirect tests
     sub.w       (a0),d5
     sub.w      (a7),d7
     sub.b       d2,(a7)
     sub.w       d7,(a5)
     sub.l       d6,(a1)
-    
-    mulu        d2,d5 *can you distinguish sub from other op-codes?
-    
+        
     sub.b       (a2)+,d4 * indirect tests with post-increment
     sub.w       (a3)+,d2
     sub.w      (a4)+,d6

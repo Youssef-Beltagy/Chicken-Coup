@@ -43,8 +43,8 @@ A list of all required tasks.
 ## Autumn 2020 Requirement:
 
 1. [x] NOP
-2. [ ] MOVE
-3. [ ] MOVEM
+2. [x] MOVE
+3. [x] MOVEM
 4. [x] ADD
 5. [x] SUB
 6. [x] MULS

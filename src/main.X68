@@ -10,6 +10,19 @@ START:                  ; first instruction of program
 
 * FIXME: For Testing, DELETE LATER *============================
     bra         SKIP_TESTS * don't actually run the tests
+
+    movem.w         (a1)+,d4-a5
+    movem.l         d1-a7,-(a1)
+    movem.w         $1000,d0-a0
+    movem.l         d0-a3,$2000
+    movem.w         d0-a3,$f000
+    movem.l         a7/d6/d2,$f000
+
+    ext             d3
+
+    movem.w         d0-a3,(0,a6)
+    movem.w         d0-a6,(0,a6,d5)
+
     bra         $1002
     bra         $1102
     jsr         START
@@ -522,6 +535,41 @@ CONTINUE_SUBROUTINE:
     bra         MAIN_LOOP_PRINT
 SKIP_SUBROUTINE:
 
+    *Is this move?
+    move.w      (a6),d0
+    lsr.w       #7,d0 * Are the first two bits zeros or not?
+    lsr.w       #7,d0
+    cmp.w       #0,d0
+    bne         SKIP_MOVEROUTINE
+
+    move.w      (a6),d0
+    lsr.w       #8,d0 * Is the first nibble zero or 1/2/3
+    lsr.w       #4,d0
+    cmp.w       #0,d0
+    beq         SKIP_MOVEROUTINE
+
+    jsr         MOVEROUTINE
+    bra         MAIN_LOOP_PRINT
+SKIP_MOVEROUTINE:
+
+    *Is this MOVEM
+    move.w      (a6),d0
+    lsr.w       #3,d0
+    lsl.b       #1,d0
+    lsr.w       #5,d0
+    cmp.w       #$49,d0
+    bne         SKIP_MOVEMROUTINE
+
+    move.w      (a6),d0
+    lsr.w       #3,d0
+    and.w       #7,d0
+    cmp.w       #0,d0
+    beq         SKIP_MOVEMROUTINE * get rid of ext
+
+    jsr         MOVEMROUTINE
+    bra         MAIN_LOOP_PRINT
+SKIP_MOVEMROUTINE:
+
 *put more op-code subroutine calls here.
 *Just like NOPROUTINE
 
@@ -782,7 +830,7 @@ LONG_FROM_STRING_END:
     rts
 * End of LONG_FROM_STRING subroutine
 
-STRING_FROM_NIBBLE:
+STRING_FROM_NIBBLE: *TODO: SEE if you can make this subroutine use d2.b just for the sake of consistency.
 *Description:
 *Given the lower nibble at d1.b, will convert that into a char in the
 *memory pointed to by a1.
@@ -946,7 +994,7 @@ IS_EA_VALID:
     cmp.b       #2,d1 * the first two modes are valid.
     blt         IS_EA_VALID_TRUE * abs short and abs long
 
-    cmp.b       #4,d1 * the immediate accessing mode.
+    cmp.b       #4,d1 * the immediate addressing mode.
     beq         IS_EA_VALID_TRUE
 
 
@@ -1268,6 +1316,7 @@ LIKE_ANDROUTINE:
 
     move.b      #SPC,(a1)+ * Leave some spaces to print beautifully.
     move.b      #SPC,(a1)+
+    move.b      #TAB,(a1)+
 
     move.w      (a6)+,d2 * make d2.w contain the instruction and increment a6
 
@@ -1447,6 +1496,7 @@ NOTROUTINE:
 
     move.b      #SPC,(a1)+ * Leave some spaces to print beautifully.
     move.b      #SPC,(a1)+
+    move.b      #TAB,(a1)+
 
     *prepare to call GET_EA
     move.w      (a6)+,d2
@@ -1597,6 +1647,7 @@ LSLROUTINE:
 
     move.b      #SPC,(a1)+ * Leave some spaces to print beautifully.
     move.b      #SPC,(a1)+
+    move.b      #TAB,(a1)+
 
     * Get the register/count
     move.w      (a6),d2
@@ -1652,6 +1703,7 @@ LSLROUTINE_EA: * This is LSL for an ea destination.
     move.b      #SPC,(a1)+
     move.b      #SPC,(a1)+
     move.b      #SPC,(a1)+
+    move.b      #TAB,(a1)+
 
     *prepare to call GET_EA
     move.w      (a6)+,d2
@@ -1704,6 +1756,7 @@ ASRROUTINE:
 
     move.b      #SPC,(a1)+ * Leave some spaces to print beautifully.
     move.b      #SPC,(a1)+
+    move.b      #TAB,(a1)+
 
     * Get the register/count
     move.w      (a6),d2
@@ -1759,6 +1812,7 @@ ASRROUTINE_EA: * This is ASR for an ea destination.
     move.b      #SPC,(a1)+
     move.b      #SPC,(a1)+
     move.b      #SPC,(a1)+
+    move.b      #TAB,(a1)+
 
     *prepare to call GET_EA
     move.w      (a6)+,d2
@@ -1836,7 +1890,7 @@ ADDROUTINE_END:
 
 SUBROUTINE:
 *Description:
-*Loads "SUB.", then the size and the effective addressing modes into
+*Loads "SUB.", then the size and the effective addressing modes
 *into buffer and makes a6 point to the next op-code.
 *Requires a1 to point to buffer.
 *input: a6
@@ -1858,6 +1912,343 @@ SUBROUTINE_END:
     rts
 
 * End of SUBROUTINE subroutine
+
+MOVEROUTINE:
+*Description:
+*Loads "MOVE.", then the size and the effective addressing modes
+*into buffer and makes a6 point to the next op-code.
+*Requires a1 to point to buffer.
+*input: a6
+*Output: a6, a1, and the value pointed to by a1
+    movem.l     A0/A2-A5/D0-D7, -(sp)
+
+    * Check the validty of the source addressing mode first.
+    jsr         IS_EA_VALID
+    cmp.l       #-1,d7
+    beq         MOVEROUTINE_END * it is okay to directly call MOVEROUTINE_END here
+
+    move.w      (a6),d0 * put the opcode in d0.
+    move.w      d0,d1 * copy to d1
+
+    *put the mode of the destination in d0.
+    lsl.w       #7,d0
+    lsr.w       #7,d0
+    lsr.w       #6,d0
+
+    *put the address of the destination in d1.
+    lsl.w       #4,d1
+    lsr.w       #6,d1
+    lsr.w       #7,d1
+
+    *store the EA of the destination in d4.w
+    move.w      d0,d4
+    lsl.w       #3,d4
+    or.w        d1,d4
+
+    * Is the destination a direct address register?
+    cmp.b       #1,d0
+    beq         MOVEROUTINE_DESTINATION_INVALID * Address register as the destination.
+
+    cmp.b       #5,d0
+    blt         MOVEROUTINE_DESTINATION_VALID * The first 5 addressing modes minus the direct address regsiter are valid.
+
+    cmp.b       #7,d0
+    blt         MOVEROUTINE_DESTINATION_INVALID * the sixth and seventh addressing modes are invalid.
+
+    * that leaves the last addressing mode.
+    * I will use the 3 register bits at d1 to make decisions from now on.
+
+    cmp.b       #2,d1 * the first two modes are valid.
+    blt         MOVEROUTINE_DESTINATION_VALID * abs short and abs long
+
+    cmp.b       #4,d1 * the immediate addressing mode is valid.
+    beq         MOVEROUTINE_DESTINATION_VALID
+
+    * Any other mode is invalid by this point.
+    bra         MOVEROUTINE_DESTINATION_INVALID
+
+
+MOVEROUTINE_DESTINATION_VALID:
+    lea         MOVE_OPCODE,a2
+    jsr         COPY_STRING_A2_TO_A1 *Copy "MOVE." into a1
+
+    *get the size in d0
+    move.l      #0,d0
+    move.w      (a6),d0
+    lsr.w       #6,d0
+    lsr.w       #6,d0
+
+    lea         MOVEROUTINE_SIZE_JMP_TABLE,a2
+    mulu.w      #6,d0
+    jmp         (0,a2,d0)
+
+    *After the jump table, the size should be set in d3.b
+MOVEROUTINE_AFTER_TABLE:
+
+    *print a few spaces.
+    move.b      #TAB,(a1)+
+    move.b      #SPC,(a1)+
+    move.b      #SPC,(a1)+
+    move.b      #SPC,(a1)+
+    move.b      #SPC,(a1)+
+    
+
+    * set d2.w and a6
+    move.w      (a6)+,d2
+
+    *d2.W is prepared
+    *d3.b is prepared
+    *a6 was incremented and is prepared.
+    jsr         GET_EA
+
+    *print a comma
+    move.b      #COMMA,(a1)+
+
+    *get the EA of the destination
+    move.w      d4,d2
+
+    *d2.W is prepared
+    *d3.b is prepared
+    *a6 was incremented and is prepared.
+    jsr         GET_EA
+
+    lea         LINE_END,a2
+    jsr         COPY_STRING_A2_TO_A1
+
+    move.b      #0,(a1)+ * terminate the string.
+
+    bra         MOVEROUTINE_END
+
+MOVEROUTINE_SIZE_JMP_TABLE:
+    jmp         MOVEROUTINE_S_00
+    jmp         MOVEROUTINE_S_01
+    jmp         MOVEROUTINE_S_10
+    jmp         MOVEROUTINE_S_11
+
+MOVEROUTINE_S_00: *this is an error. Print that.
+    lea         ERROR_STRING,a2
+    jsr         COPY_STRING_A2_TO_A1
+    move.b      #0,(a1)+
+    adda.l      #2,a6
+    bra         MOVEROUTINE_END
+
+MOVEROUTINE_S_01: *byte
+    move.b      #0,d3 * sets the size. Don't mess with d3 from now on.
+    move.b      #66,(a1)+
+    bra         MOVEROUTINE_AFTER_TABLE
+    
+MOVEROUTINE_S_10: * long
+    move.b      #2,d3 * sets the size. Don't mess with d3 from now on.  
+    move.b      #76,(a1)+
+    bra         MOVEROUTINE_AFTER_TABLE
+
+MOVEROUTINE_S_11: * word
+    move.b      #1,d3 * sets the size. Don't mess with d3 from now on.  
+    move.b      #87,(a1)+
+    bra         MOVEROUTINE_AFTER_TABLE
+
+MOVEROUTINE_DESTINATION_INVALID:
+    jsr         DATAROUTINE
+MOVEROUTINE_END:
+    movem.l     (sp)+,A0/A2-A5/D0-D7
+    rts
+
+* End of MOVEROUTINE subroutine
+
+MOVEMROUTINE:
+*Description:
+*Loads "MOVEM.", then the size, the register list, and the effective addressing mode
+*into buffer and makes a6 point to the next op-code.
+*Requires a1 to point to buffer.
+*input: a6
+*Output: a6, a1, and the value pointed to by a1
+    movem.l     A0/A2-A5/D0-D7, -(sp)
+
+    * Check the validty of the source addressing mode first.
+    jsr         IS_EA_VALID
+    cmp.l       #-1,d7
+    beq         MOVEMROUTINE_END
+
+    move.w      (a6)+,d2 * store the op-code in d2.w
+    move.w      (a6)+,d7 * store the register-list in d7.w
+
+    * Print "MOVE."
+    lea         MOVEM_OPCODE,a2
+    jsr         COPY_STRING_A2_TO_A1
+
+    btst        #6,d2
+    bne         MOVEMROUTINE_LONG * size of 1 for long
+
+    *size of 0 for word.
+    move.b      #87,(a1)+
+    bra         MOVEMROUTINE_AFTER_SIZE
+
+    *size of 1 for word.
+MOVEMROUTINE_LONG:
+    move.b      #76,(a1)+
+
+    *we got the size. Let's get the EA.
+MOVEMROUTINE_AFTER_SIZE:
+    move.b      #SPC,(a1)+ *TODO: FIX the indentation later.
+    move.b      #SPC,(a1)+
+    move.b      #TAB,(a1)+
+
+    btst        #10,d2
+    * if the 11th bit is 1, 
+    bne         MOVEMROUTINE_M_TO_R * then the direction is memory to register
+
+    *else, the direction is register to memory
+
+    jsr         MOVEMROUTINE_GET_R
+
+    move.b      #COMMA,(a1)+
+
+    jsr         MOVEMROUTINE_GET_M
+    bra         MOVEMROUTINE_END_LINE
+
+MOVEMROUTINE_M_TO_R:
+    jsr         MOVEMROUTINE_GET_M
+
+    move.b      #COMMA,(a1)+
+
+    jsr         MOVEMROUTINE_GET_R
+    bra         MOVEMROUTINE_END_LINE
+
+MOVEMROUTINE_END_LINE:
+    lea         LINE_END,a2
+    jsr         COPY_STRING_A2_TO_A1
+    move.b      #0,(a1)+
+    
+MOVEMROUTINE_END:
+    movem.l     (sp)+,A0/A2-A5/D0-D7
+    rts
+
+* A subroutine to handle getting the register list.
+MOVEMROUTINE_GET_R:
+    movem.l     d2/d7/a6,-(sp) *FIXME: CONSIDER COPYING EVERYTHING USED.
+    * don't modify d2, d7, or a6
+
+    *get the addressing mode.
+    lsr.w       #3,d2
+    and.w       #7,d2
+    cmp.w       #4,d2
+    beq         MOVEMROUTINE_GET_R_PRE * Preincrement access mode.
+
+    * otherwise it is control mode or postincrement which are treated the
+    * same way.
+MOVEMROUTINE_GET_R_POST:
+
+    * It is postincrement.
+    move.b      #0,d2
+    move.l      #0,d1 * keep track of whether you printed before or not.
+    
+* GET the data registers
+MOVEMROUTINE_GET_R_POST_D_LOOP:
+
+    btst        #0,d7
+    beq         MOVEMROUTINE_GET_R_POST_D_AFTER
+    jsr         MOVEMROUTINE_GET_R_D_PRINT * print the data register
+MOVEMROUTINE_GET_R_POST_D_AFTER:
+
+    add.b       #1,d2 *update the loop
+    lsr.w       #1,d7 *update the register list.
+    cmp.b       #8,d2 *should you loop again?
+    blt         MOVEMROUTINE_GET_R_POST_D_LOOP
+
+* GET the ADDRESS registers
+    move.b      #0,d2
+MOVEMROUTINE_GET_R_POST_A_LOOP:
+
+    btst        #0,d7
+    beq         MOVEMROUTINE_GET_R_POST_A_AFTER
+    jsr         MOVEMROUTINE_GET_R_A_PRINT * print the address register
+MOVEMROUTINE_GET_R_POST_A_AFTER:
+
+    add.b       #1,d2 *update the loop
+    lsr.w       #1,d7 *update the register list.
+    cmp.b       #8,d2 *should you loop again?
+    blt         MOVEMROUTINE_GET_R_POST_A_LOOP
+
+    bra         MOVEMROUTINE_GET_R_END * end the GET_R subroutine
+
+* The branch responsible for handling registerlist of predecrement.
+MOVEMROUTINE_GET_R_PRE:
+    * It is pre.
+    move.b      #8,d2
+    move.l      #0,d1 * keep track of whether you printed before or not.
+
+* GET the address registers.
+MOVEMROUTINE_GET_R_PRE_A_LOOP:
+    add.b       #-1,d2 * update the loop.
+
+    btst        #0,d7
+    beq         MOVEMROUTINE_GET_R_PRE_A_AFTER        
+    jsr         MOVEMROUTINE_GET_R_A_PRINT * print the address register.
+MOVEMROUTINE_GET_R_PRE_A_AFTER:
+
+    lsr.w       #1,d7 * update the register list.
+    cmp.b       #0,d2 * should you loop again?
+    bgt         MOVEMROUTINE_GET_R_PRE_A_LOOP
+    
+* GET the data registers
+    move.b      #8,d2
+
+MOVEMROUTINE_GET_R_PRE_D_LOOP:
+    add.b       #-1,d2 * update the loop.
+
+    btst        #0,d7
+    beq         MOVEMROUTINE_GET_R_PRE_D_AFTER
+    jsr         MOVEMROUTINE_GET_R_D_PRINT * print the data register.
+MOVEMROUTINE_GET_R_PRE_D_AFTER:
+
+    lsr.w       #1,d7 * update the register list
+    cmp.b       #0,d2 * should you loop again?
+    bgt         MOVEMROUTINE_GET_R_PRE_D_LOOP
+
+    *END the GET_R subroutine.
+MOVEMROUTINE_GET_R_END: 
+    movem.l     (sp)+,d2/d7/a6,
+    rts
+
+    *prints the data register number d2.b
+MOVEMROUTINE_GET_R_D_PRINT:
+    *decide whether or not to print a slash.
+    jsr         MOVEMROUTINE_GET_R_SLASH
+    jsr         GET_D_REG_DIRECT
+    add.b       #1,d1
+    rts
+
+    *prints the address register number d2.b
+MOVEMROUTINE_GET_R_A_PRINT:
+    *decide whether or not to print a slash.
+    jsr         MOVEMROUTINE_GET_R_SLASH
+    jsr         GET_A_REG_DIRECT
+    add.b       #1,d1
+    rts
+
+    *prints a slash if this is not the first register.
+MOVEMROUTINE_GET_R_SLASH:
+    cmp.b       #0,d1
+    beq         MOVEMROUTINE_GET_R_SLASH_END
+    move.b      #47,(a1)+
+MOVEMROUTINE_GET_R_SLASH_END:
+    rts
+
+* A subroutine to handle printing the EA
+MOVEMROUTINE_GET_M:
+    * GET the size.
+    move.w      d2,d3
+    lsr.w       #6,d3
+    and.w       #1,d3
+    add.w       #1,d3
+
+    *d2.W is prepared
+    *d3.b is prepared
+    *a6 was incremented and is prepared.
+    jsr         GET_EA
+    rts
+
+* End of MOVEMROUTINE subroutine and its helper subroutines
 
 
 BCCROUTINE:
@@ -1988,7 +2379,7 @@ BCCROUTINE_END:
 *-----------------------------------------------------------
 * Put variables and constants here
 
-CR                  equ $0D
+CR                  equ $0D *FIXME: be consistent. Either hex or decimal.
 LF                  equ $0A
 INITIAL_COUNT       equ 25
 SPC                 equ 32
@@ -2015,19 +2406,19 @@ NOP_OPCODE
     dc.b    'NOP',CR,LF,0
 
 DATA_OPCODE
-    dc.b    'DATA   $',0 * must be null terminated
+    dc.b    'DATA',TAB,'   $',0 * must be null terminated
 
 BRA_OPCODE
-    dc.b    'BRA    $',0
+    dc.b    'BRA',TAB,'    $',0
 
 BLT_OPCODE
-    dc.b    'BLT    $',0
+    dc.b    'BLT',TAB,'    $',0
 
 BGE_OPCODE
-    dc.b    'BGE    $',0
+    dc.b    'BGE',TAB,'    $',0
 
 BEQ_OPCODE
-    dc.b    'BEQ    $',0
+    dc.b    'BEQ',TAB,'    $',0
 
 RTS_OPCODE
     dc.b    'RTS',CR,LF,0
@@ -2036,16 +2427,16 @@ AND_OPCODE
     dc.b    'AND.',0
 
 JSR_OPCODE
-    dc.b    'JSR    ',0
+    dc.b    'JSR    ',TAB,0
 
 NOT_OPCODE
     dc.b    'NOT.',0
 
 LEA_OPCODE
-    dc.b    'LEA    ',0
+    dc.b    'LEA    ',TAB,0
 
 MULS_OPCODE
-    dc.b    'MULS   ',0
+    dc.b    'MULS   ',TAB,0
 
 LSL_OPCODE
     dc.b    'LSL',0
@@ -2058,6 +2449,12 @@ ADD_OPCODE
 
 SUB_OPCODE
     dc.b    'SUB.',0
+
+MOVE_OPCODE
+    dc.b    'MOVE.',0
+
+MOVEM_OPCODE
+    dc.b    'MOVEM.',0
 
 IAM_STRING * FIXME: No longer needed. Consider deleting
     dc.b    'IAM',0
@@ -2110,6 +2507,10 @@ PROGRAM_START_MESSAGE
     dc.b    TAB,TAB,TAB,TAB,'           ',34,' ',34,' ',CR,LF
     dc.b    CR,LF
     dc.b    'A Motorola 68K disassembler.',CR,LF
+    dc.b    TAB,'--BY Youssef Beltagy (ybeltagy or the Chicken Lord)',CR,LF
+    dc.b    TAB,'Wait! Am I organizing a coup against myself?!',CR,LF
+    dc.b    TAB,'No, it must be against humanity',39,'s oppression of chickens!',CR,LF
+    dc.b    CR,LF
     dc.b    'Please input your addresses as 8 hex-digits!',CR,LF
     dc.b    'When the program pauses, press enter to continue or q to exit.',CR,LF,LF,0
 
