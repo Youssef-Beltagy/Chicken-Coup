@@ -45,7 +45,7 @@ A list of all required tasks.
 1. [x] NOP
 2. [ ] MOVE
 3. [ ] MOVEM
-4. [x] ADD
+4. [ ] ADD
 5. [ ] SUB
 6. [x] MULS
 7. [ ] DIVU -- No longer required
