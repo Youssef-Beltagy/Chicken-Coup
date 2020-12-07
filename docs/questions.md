@@ -21,6 +21,7 @@ This file is for documenting questions to the professor and their answers.
 - Ask about bug in the main.
 - LSd and ASd have two signatures each. For the <ea> one, should we write the size or not?
 - How do we test bcc with long displacement?
+- LSL, ASR word on control
 
 
 
@@ -38,3 +39,36 @@ This file is for documenting questions to the professor and their answers.
 - Check whether NOT and JSR are similar or not.
 - Review MOVE and MOVEM to ensure I didn't make mistakes.
 - Fix the rest of the indentations
+- Make data use TAB.
+
+
+ADD fails with immediate data as the source.
+
+```
+0000937E  5E83                     356      add.l       #$7,d3    *immediate
+00009380  0647 0010                357      add.w       #$10,d7   *immediate word
+00009384  0603 0060                358      add.b       #$60,d3   *immediate byte
+00009388  0684 00000234            359      add.l       #$00234,d4 * immediate long
+0000938E  0685 000FF234            360      add.l       #$ff234,d5 * immediate long
+00009394 
+```
+
+SUB fails with immediate data as the source
+
+```
+0973A  5F83                     653      sub.l       #$7,d3    *immediate
+0000973C  0447 0010                654      sub.w       #$10,d7   *immediate word
+00009740  0403 0060                655      sub.b       #$60,d3   *immediate byte
+00009744  0484 00000234            656      sub.l       #$00234,d4 * immediate long
+0000974A  0485 000FF234            657      sub.l       #$ff234,d5 * immediate long
+00009750                           658   
+```
+
+
+AND when move is data in my test files.
+
+move fails with immediate data as the source.
+
+```
+00009682  7607                     575      move.l      #$7,d3    *immediate
+```

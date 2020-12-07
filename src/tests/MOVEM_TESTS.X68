@@ -11,7 +11,7 @@ START:                  ; first instruction of program
     movem.l         d1-a7,-(a1)
     movem.w         $1000,d0-a0
     movem.l         d0-a0,$2000
-    movem.w         d0-a7,$f000
+    movem.w         d0-a6,$f000
     movem.l         a7/d6/d2,$f000
 
     ext             d3

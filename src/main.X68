@@ -481,7 +481,7 @@ SKIP_ASRROUTINE:
     
     *Is this add?
     move.w      (a6),d0
-    lsr.w       #6,d0
+    lsr.w       #6,d0 * Is the first nibble d?
     lsr.w       #6,d0
     cmp.b       #$d,d0
     bne         SKIP_ADDROUTINE
@@ -1988,9 +1988,9 @@ MOVEROUTINE_AFTER_TABLE:
     *print a few spaces.
     move.b      #TAB,(a1)+
     move.b      #SPC,(a1)+
-    move.b      #SPC,(a1)+
-    move.b      #SPC,(a1)+
-    move.b      #SPC,(a1)+
+    *move.b      #SPC,(a1)+
+    *move.b      #SPC,(a1)+
+    *move.b      #SPC,(a1)+
     
 
     * set d2.w and a6
@@ -2089,8 +2089,8 @@ MOVEMROUTINE_LONG:
 
     *we got the size. Let's get the EA.
 MOVEMROUTINE_AFTER_SIZE:
-    move.b      #SPC,(a1)+ *TODO: FIX the indentation later.
-    move.b      #SPC,(a1)+
+    *move.b      #SPC,(a1)+ *TODO: FIX the indentation later.
+    *move.b      #SPC,(a1)+
     move.b      #TAB,(a1)+
 
     btst        #10,d2
