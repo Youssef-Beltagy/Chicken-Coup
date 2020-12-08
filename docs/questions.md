@@ -22,6 +22,7 @@ This file is for documenting questions to the professor and their answers.
 - LSd and ASd have two signatures each. For the <ea> one, should we write the size or not?
 - How do we test bcc with long displacement?
 - LSL, ASR word on control
+- Ask about ADD, SUB, and Move cases.
 
 
 
@@ -40,6 +41,7 @@ This file is for documenting questions to the professor and their answers.
 - Review MOVE and MOVEM to ensure I didn't make mistakes.
 - Fix the rest of the indentations
 - Make data use TAB.
+- Test immediate EA of size byte because I don't remember how it behaves exactly.
 
 
 ADD fails with immediate data as the source.
@@ -72,3 +74,5 @@ move fails with immediate data as the source.
 ```
 00009682  7607                     575      move.l      #$7,d3    *immediate
 ```
+
+Test that the program doesn't exist with q1234567. But exists with just q.

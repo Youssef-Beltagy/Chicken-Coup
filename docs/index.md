@@ -45,22 +45,34 @@ A list of all required tasks.
 1. [x] NOP
 2. [ ] MOVE
 3. [ ] MOVEM
-4. [ ] ADD
-5. [ ] SUB
+4. [x] ADD
+5. [x] SUB
 6. [x] MULS
-7. [ ] DIVU -- No longer required
-8. [ ] LEA
+7. [ ] DIVU -- No longer required (Must not implement or I will lose points)
+8. [x] LEA
 9. [x] AND
 10. [x] NOT
 11. [x] LSL
-12. [ ] LSR -- No longer required
-13. [ ] ASL -- No longer required
-14. [ ] ASR
-15. [x] Bcc     (BLT, BGE, BEQ)
+12. [ ] LSR -- No longer required (Must not implement or I will lose points)
+13. [ ] ASL -- No longer required (Must not implement or I will lose points)
+14. [x] ASR
+15. [ ] Bcc     (BLT, BGE, BEQ)
 16. [x] JSR
 17. [x] RTS
 18. [x] BRA
 19. [x] DATA as a default
+
+
+
+## Signature
+
+The design is built on the concept of op-code signatures. I define a signature as the common component in the 16-bit permutations that an op-code maps onto when it is assembled. While one op-code can map onto many permutations, each permutation can only map to one op-code.
+
+The signature must be loose enough to include all permutations of an op-code, but must be tight enough that it doesn't contain another op-code's permutations.
+
+The set of all permutations that contain the signature is equal to the set of permutations of an op-code.
+
+These signatures are exclusive to one op-code. Two op-codes cannot share the same signature. If a signature is shared across op-codes, then it is wrong by definition.
 
 
 
@@ -70,9 +82,13 @@ The program will ask the user for a starting and ending memory addresses to disa
 
 Then the program will check if the read word matches a specific op-code signature. The program checks the op-codes one by one.
 
-If the word matches an op-code, the subroutine for that specific op-code will be called. If the word didn't match a subroutine, the word will be treated as data, and the program will call subroutine of the data.
+If the word matches an op-code, the subroutine for that specific op-code is called. If the word didn't match a subroutine, the word will be treated as data, and the program will call the data subroutine.
 
-The program will print the op-code or data until the end of the output console or the end memory address. If the program reached the end of the output console, the program will wait for the user to press "enter" before it disassembles more. If the program reached the end of the memory, the program will restart and ask the user for a new starting and ending addresses.
+The program will print the op-code or data until the end of the output console or the end memory address. If the program reached the end of the output console, the program will wait for the user to press "enter" before it disassembles more. If the program reached the end of the memory the user entered, the program will restart and ask the user for a new starting and ending addresses.
+
+In the design, I distinguish between two types of subroutines. Utility subroutines are routines that handle general program logic and are to be used in multiple op-codes. Op-code Subroutines are subroutines that handle a single op-code from the beginning to the end.
+
+Every subroutine starts with comments that explains what it does, its inputs, and its ouputs.
 
 
 
@@ -84,9 +100,10 @@ The program will print the op-code or data until the end of the output console o
 
 ### Coding Guidelines
 
-We are a team of four. We need to define some guidelines to maximize our effectiveness. Otherwise, our code will not integrate, and we fight often.
+This is a long project. So I defined some guidelines to follow when writing the code to ensure high-quality and easy integration.
 
-Test your code and document these tests. Follow the guidelines of [Test-Driven Development](https://en.wikipedia.org/wiki/Test-driven_development).
+
+I test my code and document these tests. I follow the guidelines of [Test-Driven Development](https://en.wikipedia.org/wiki/Test-driven_development).
 
 1. Write a unit test.
 2. Run the test and ensure it fails before you implement.
@@ -96,72 +113,90 @@ Test your code and document these tests. Follow the guidelines of [Test-Driven D
 6. Repeat and accumulate unit tests
 
 
-Test that your code works when it should and fails when it shouldn't. You don't want to print an op-code when you were given wrong input.
+I Test that the code works when it should and fails when it shouldn't. I don't want to print an op-code when I am given wrong input.
 
 
 
 #### Style Guidelines
 
-Write your code in small letters.
+I write my code in small letters.
 
-Write your labels in capital letters.
+I write my labels in capital letters.
 
-If you are writing the subroutine for move, label your subroutine MOVEROUTINE. Do the same for all op-codes (ADDROUTINE, NOPROUTINE, etc.).
+I follow a standard naming process for my opcode-subroutines. I prepend the name of the op-code to its subroutine. For example, I name the subroutine that handles move, MOVEROUTINE.
 
-Prepend all labels in your subroutines with the subroutine name to avoid conflicts.
-
+For labels inside subroutines, I prepend the subroutine label. For example, if I'm writing a loop inside MOVEROUTINE, I name the label for the loop MOVEROUTINE_LOOP. This allows me to avoid accidentally duplicating a label and moving the program control haphazardly.
 
 
 #### Git Rules
 
-For every feature, make a branch. Name the branch with that feature. Don't use your name.
+For every feature, I make a branch. I name the branch with that feature.
 
-When you are finished implementing a feature, make a merge request. Your code will not be merged until we have a unanimous agreement that it is correct. You are responsible for correcting anything that others point out.
+When I am finished implementing a feature, I make a merge request and review it one last time.
 
-Test your code. Write tests even before you begin implementation. And follow the guidelines of [Test-Driven Development](https://en.wikipedia.org/wiki/Test-driven_development). When you merge, show the output of your tests in a way that is convenient for you and us. It will save us all time if you show your tests. Remeber, you will review the work of others three times as much as your own. We all save time if we document our output.
-
-Before you accept others' merge requests, read their code and test it. Don't assume their tests are enough. They might have missed, forgotten, or misinterpreted a case. We all know this, but just because the code works doesn't mean it is correct.
-
+Again, I follow the principles of test-driven development. I make tests. I ensure they fail. I make the tests pass, and I record the tests in merge requests.
 
 
 #### Op-Code Subroutines
 
-If you are writing routine for move, label your routine MOVEROUTINE. Do the same for all op-codes (ADDROUTINE, NOPROUTINE, etc.).
+Again, each op-code has its own subroutine. The label for the subroutine is the op-code name in all capitals with "ROUTINE" appended at the end (MOVEROUTINE).
 
-Every op-code subroutine should only handle that op-code. It should read bytes from (A6) and load what should be printed into A1. It should increment A6 with the number of bytes it read (so A6 should point to the next op-code by the end). All other registers and memory should remain unchanged.
+Every op-code subroutine only handle that op-code. It reads a bytes from (a6) and loads what should be printed into A1. It increments a6 with the number of bytes it read (so a6 points to the next op-code by the end). All other registers and memory should remain unchanged.
 
-**Input = A6**
+Every op-code should start with comments that explain it. It should also start by backing up the registers it uses. At the end of a subroutine, the subroutine should restore the states of the registers.
 
-**Output = value pointed to by A1, A6**
+Here is an example of a subroutine op-code:
 
-**Behavior:**
+```assembly
+LSLROUTINE:
+*Description:
+*Requires a1 to point to buffer.
+*Loads "LSL" into BUFFER and handles its size and EA.
+*If the EA is invalid, calls DATAROUTINE.
+*input: a6
+*Output: a6, a1, and the value pointed to by a1
+    movem.l     a2,-(sp)
 
- - **Process opcode and put the address of what should printed in the value pointed to by A1.**
- - **A6 += size of the opcode**
- - **Everything else should remain unchanged.**
+    lea         LSL_OPCODE,a2
+    jsr         SHIFTROUTINE
 
-Every op-code subroutine should begin with
+    movem.l     (sp)+,a2
+    rts
 
-```
-movem.l     A0-A5/D0-D7, -(sp)
-```
-
-and end with
-
-```
-movem.l     (sp)+,A0-A5/D0-D7
-rts
-```
-
-
+* End of LSLROUTINE subroutine
+``` 
 
 #### Utility Subroutines
 
-As we go forward in this program, we will find that some code will be used and reused. For example, the code that will write our strings.
+These are subroutines that I implemented as I needed in this project. I implemented them to be reusable. I ended up reusing and reusing code so that saved me time.
 
-Some op-codes are similar and will have similar code. When we detect that, we will make a utility subroutine for that.
+Here are their descriptions.
 
 ```assembly
+INPUT_OR_EXIT:
+*Description:
+*Ensures that INPUT_START and INPUT_END
+*contain valid starting and ending addresses
+*or returns -1 if the program should terminate.
+*The addresses are valid if INPUT_END >= INPUT_START
+*and INPUT_START is even.
+*sets d7 to 0 for valid input and to -1 for exit.
+*Nothing changes other than INPUT_START, INPUT_END, and d7
+*Input: nothing
+*Output: d7.l, INPUT_START, INPUT_END
+
+
+
+CONTINUE_OR_EXIT:
+*Description:
+*Ensures that MAIN_LOOP_COUNTER is reset or that
+*d7.l = -1 to indicate that the program should terminate.
+*nothing changes other than MAIN_LOOP_COUNTER or d7.l
+*Input: nothing
+*Output: d7.l
+
+
+
 LONG_FROM_STRING:
 *Description:
 *Given a string at a1 and its size at d1.w, returns a hex number at 
@@ -170,13 +205,15 @@ LONG_FROM_STRING:
 *Input: a1, d1.w
 *Output: d7.l, d6.l
 
+
 STRING_FROM_NIBBLE:
 *Description:
-*Given the lower nibble at d1.b, will convert that into a char in the
+*Given the lower nibble at d2.b, will convert that into a char in the
 *memory pointed to by a1.
 *nothing other than a1 and the memory it points to will change
-*Input: a1, d1.b
+*Input: a1, d2.b
 *Output: a1 and the memory it points to
+
 
 STRING_FROM_BYTE:
 *Description:
@@ -186,6 +223,7 @@ STRING_FROM_BYTE:
 *Input: a1, d2.b
 *Output: a1 and the memory it points to
 
+
 STRING_FROM_WORD:
 *Description:
 *Given a word at d2.w, will convert that into a string of hex
@@ -193,6 +231,7 @@ STRING_FROM_WORD:
 *nothing other than a1 and the memory it points to will change
 *Input: a1, d2.w
 *Output: a1 and the memory it points to
+
 
 STRING_FROM_LONG:
 *Description:
@@ -202,13 +241,15 @@ STRING_FROM_LONG:
 *Input: a1, d2.l
 *Output: a1 and the memory it points to
 
+
 COPY_STRING_A2_TO_A1:
 *Description:
 *Given a null terminated string at a2, will
-*copy th string to a1 except the terminating null.
-*a1 and the value it points to will change.
+*copy the string to a1 except the terminating null.
+*Nothing other than a1 will change
 *Input: a1, a2
 *Output: a1
+
 
 IS_EA_VALID:
 *Description:
@@ -218,9 +259,9 @@ IS_EA_VALID:
 *If the effective address is valid, returns 0 in d7.l
 *Nothing should be affected other than a6, d7.l, a1,
 *and the memory a1 points to.
-*Nothing other than a1 will change
 *Input: a6, a1
 *Output: a6, d7.l, a1, and the memory pointed to by a1.
+
 
 GET_LIGHT_PURPLE_SIZE:
 *Description:
@@ -228,9 +269,10 @@ GET_LIGHT_PURPLE_SIZE:
 * the light purple size in http://goldencrystal.free.fr/M68kOpcodes-v2.3.pdf.
 * This subroutine will print the approperiate size (B|W|L) in the value pointed to by a1.
 * If the input is Invalid, prints ERROR_STRING.
-* returns the TEMP_VARIABLE.b.
+* returns the size in TEMP_VARIABLE.b.
 *Input: a6
 *Output: a1, TEMP_VARIABLE.b
+
 
 GET_A_REG_DIRECT:
 *Description:
@@ -241,6 +283,7 @@ GET_A_REG_DIRECT:
 *Input: a1, d2.b
 *Output: a1 and the memory it points to
 
+
 GET_D_REG_DIRECT:
 *Description:
 *Given a byte at d2.b, will print "D" then the number of the
@@ -249,6 +292,7 @@ GET_D_REG_DIRECT:
 *nothing other than a1 and the memory it points to will change
 *Input: a1, d2.b
 *Output: a1 and the memory it points to
+
 
 GET_A_REG_INDIRECT:
 *Description:
@@ -259,6 +303,7 @@ GET_A_REG_INDIRECT:
 *Input: a1, d2.b
 *Output: a1 and the memory it points to
 
+
 GET_A_REG_INDIRECT_POST:
 *Description:
 *Given a byte at d2.b, will print "(A" then the number of the
@@ -267,6 +312,7 @@ GET_A_REG_INDIRECT_POST:
 *nothing other than a1 and the memory it points to will change
 *Input: a1, d2.b
 *Output: a1 and the memory it points to
+
 
 GET_A_REG_INDIRECT_PRE:
 *Description:
@@ -277,12 +323,14 @@ GET_A_REG_INDIRECT_PRE:
 *Input: a1, d2.b
 *Output: a1 and the memory it points to
 
+
 GET_INVALID_ADDRESSING_MODE:
 *Description:
 *Loads "IAM" into the memory pointed to by a1
 *nothing other than a1 and the memory it points to will change
 *Input: a1
 *Output: a1 and the memory it points to
+
 
 GET_EA: * Get the effective address.
 *Description:
@@ -303,6 +351,29 @@ GET_EA: * Get the effective address.
 *It is YOUR responsibility to print anything you need to print before
 *or after GET_EA.
 *Nothing other than a1 and the value it points to will change.
-*input: a6, d2.w, d3.b
-*Output: a6, the value pointed to by a1
+*input: a6, d2.w, d3.b, a1
+*Output: a6, a1, and the value pointed to by a1
+
+
+LIKE_ANDROUTINE:
+*Description:
+*For op-codes that are structured like and, 
+*loads the size and the effective addressing modes into
+*buffer and makes a6 point to the next op-code.
+*Requires a1 to point to buffer.
+*Assumes the effective addressing mode is valid.
+*Assumes the op-code is printed.
+*input: a6, a1
+*Output: a6, a1, and the value pointed to by a1
+
+
+SHIFTROUTINE:
+*Description:
+*A routine to handle shift op-codes like ASR/LSL and any more if necessary.
+*Requires a1 to point to buffer.
+*Requires a2 to point to the string of the shift ("ASR" for example).
+*Calls COPY_STRING_A2_TO_A1 and handles the size and EA of the op-code.
+*If the EA is invalid, calls DATAROUTINE.
+*input: a6, a2
+*Output: a6, a1, the value pointed to by a1
 ```

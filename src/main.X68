@@ -1,5 +1,5 @@
 *-----------------------------------------------------------
-* Title      : Disassembler
+* Title      : 68k Disassembler
 * Written by : Youssef Beltagy
 * Date       : 10/25/2020
 * Description: A 68k Disassembler
@@ -256,7 +256,7 @@ MAIN_GET_USER_INPUT:
 * FIXME: For Testing, DELETE LATER *============================
 
 
-*TODO: IMPlement a subroutine for the loop if necessary
+*TODO: Implement a subroutine for the loop if necessary
 
     *The Main Loop
     movea.l     INPUT_START,a6 * Initialize the loop.
@@ -264,6 +264,11 @@ MAIN_GET_USER_INPUT:
 
 
 MAIN_LOOP:
+
+    *Inclusive of INPUT_END
+    *Will read the op-code starting at INPUT_END
+    *That op-code could be 80 bytes, and there won't be a problem.
+
     cmp.l       INPUT_END,a6 *test exit condition
     BGT         MAIN_GET_NEW_ADDRESSES * Should you exit and ask for new addresses?
 
@@ -282,10 +287,6 @@ MAIN_LOOP_DONT_WAIT:
 
     * load the buffer
     lea         BUFFER,a1
-
-    *Inclusive of INPUT_END
-    *Will read the op-code starting at INPUT_END
-    *That op-code could be 80 bytes, and there won't be a problem.
 
     * print the address of the instruction
     move.l      a6,d2
@@ -309,7 +310,7 @@ SKIP_NOPROUTINE:
 SKIP_RTSROUTINE:
 
 
-    * Is This BCCROUTINE?
+    * Is This BCC?
     move.w      (a6),d0
     lsr.w       #6,d0
     lsr.w       #6,d0
@@ -319,42 +320,41 @@ SKIP_RTSROUTINE:
     bra         MAIN_LOOP_PRINT
 SKIP_BCCROUTINE:
 
-
     * Is this ANDROUTINE?
     move.w      (a6),d0 * Must begin with a C.
     lsr.w       #6,d0
     lsr.w       #6,d0
     cmp.b       #$C,d0
     bne         SKIP_ANDROUTINE
+
     move.w      (a6),d0
-    lsl.w       #4,d0
-    lsl.w       #4,d0
-    lsr.w       #7,d0
-    lsr.w       #7,d0
+    lsr.w       #6,d0
+    and.w       #3,d0
     cmp.b       #3,d0 * The size must not be %11 = 3
     beq         SKIP_ANDROUTINE
+
     move.w      (a6),d0
     btst        #8,d0
     bne         CONTINUE_CHECKING_ANDROUTINE * If the eigth bit is zero this is likely ANDROUTINE.
                 * If the eight bit is 0, this is an and op-code.
                 * The 0 in the eight bit chooses the direction of <ea> & Dn -> Dn 
-    lsl.b       #2,d0 *The only invalid EA for this direction is An.
-    lsr.b       #5,d0 * I don't see a reason to test for it here, but I still did. FIXME: Is this a good choice?
-    cmp.b       #1,d0
+                * The only invalid EA for this the source in this direction is An.
+    lsr.w       #3,d0 * I don't think it is necessary to test for it here, but I still did.
+    and.w       #7,d0
+    cmp.w       #1,d0
     beq         SKIP_ANDROUTINE
     jsr         ANDROUTINE  
     bra         MAIN_LOOP_PRINT  
 CONTINUE_CHECKING_ANDROUTINE:  * Else, we need to check more.
+
     * The destination is not a data register.
     * It must not be an Address register as well.
     * So we must check the mode of the destination operand and make sure
     * that it isn't 000 or 001
-    lsl.b       #2,d0
-    lsr.b       #5,d0
-    cmp.b       #0,d0
-    beq         SKIP_ANDROUTINE
-    cmp.b       #1,d0
-    beq         SKIP_ANDROUTINE
+    lsr.w       #3,d0
+    and.w       #7,d0
+    cmp.w       #2,d0
+    blt         SKIP_ANDROUTINE
     jsr         ANDROUTINE
     bra         MAIN_LOOP_PRINT
 SKIP_ANDROUTINE:
@@ -369,18 +369,24 @@ SKIP_ANDROUTINE:
 SKIP_JSRROUTINE
 
     *Is this NOT?
-    move.w      (a6),d0
+    move.w      (a6),d0 * the most significant byte must be $46
     lsr.w       #8,d0
     cmp.w       #$46,d0
     bne         SKIP_NOTROUTINE
+
+    move.w      (a6),d0 * the size must not be 11.
+    lsr.w       #6,d0 
+    and.w       #3,d0
+    cmp.w       #3,d0
+    beq         SKIP_NOTROUTINE
     jsr         NOTROUTINE
     bra         MAIN_LOOP_PRINT
 SKIP_NOTROUTINE:
 
     *Is this LEA
     move.w      (a6),d0
-    lsr.w       #4,d0
-    lsl.b       #3,d0
+    lsr.w       #4,d0 *cut out the register number
+    lsl.b       #3,d0 *using the barrier between words and bytes.
     lsr.w       #5,d0
     cmp.w       #$27,d0
     bne         SKIP_LEAROUTINE
@@ -390,16 +396,14 @@ SKIP_LEAROUTINE:
 
     *Is this MULS
     move.w      (a6),d0
-    lsr.w       #4,d0
-    lsl.b       #3,d0
+    lsr.w       #4,d0 *cut out the register number 
+    lsl.b       #3,d0 *using the barrier between words and bytes
     lsr.w       #5,d0
     cmp.w       #$67,d0
     bne         SKIP_MULSROUTINE
     jsr         MULSROUTINE
     bra         MAIN_LOOP_PRINT
 SKIP_MULSROUTINE:
-
-
 
     *Is this LSL
     move.w      (a6),d0
@@ -468,7 +472,7 @@ CONTINUE_ASRROUTINE:
     btst        #8,d0
     bne         SKIP_ASRROUTINE * if the direction is 1 (ASL), skip
 
-    * Is this ASR or nother shift left?
+    * Is this ASR or another shift left?
     lsr.w       #3,d0
     and.w       #3,d0
     cmp.w       #0,d0
@@ -486,50 +490,50 @@ SKIP_ASRROUTINE:
     cmp.b       #$d,d0
     bne         SKIP_ADDROUTINE
 
-    move.w      (a6),d0
-    lsr.w       #6,d0
+    move.w      (a6),d0 * Check the size. 
+    lsr.w       #6,d0 * The size must not be 11
     and.w       #3,d0
     cmp.w       #3,d0
     beq         SKIP_ADDROUTINE
 
-    move.w      (a6),d0
+    move.w      (a6),d0 * If the direction is 0, then it must be add.
     btst        #8,d0
     bne         CONTINUE_ADDROUTINE
     jsr         ADDROUTINE 
     bra         MAIN_LOOP_PRINT
 CONTINUE_ADDROUTINE:
 
-    lsr.w       #3,d0
-    and.w       #7,d0
-    cmp.w       #2,d0
+    lsr.w       #3,d0 * the direction is is dn + <ea> -> <ea>
+    and.w       #7,d0 * then check that the destination is not an An or Dn.
+    cmp.w       #2,d0 * Distinguishes ADD from ADDX
     blt         SKIP_ADDROUTINE
     jsr         ADDROUTINE 
     bra         MAIN_LOOP_PRINT
 SKIP_ADDROUTINE:
 
     *Is this sub?
-    move.w      (a6),d0
+    move.w      (a6),d0 * Is the first nibble 9?
     lsr.w       #6,d0
     lsr.w       #6,d0
     cmp.b       #$9,d0
     bne         SKIP_SUBROUTINE
 
-    move.w      (a6),d0
-    lsr.w       #6,d0
+    move.w      (a6),d0 *check the size.
+    lsr.w       #6,d0 * must not be 11
     and.w       #3,d0
     cmp.w       #3,d0
     beq         SKIP_SUBROUTINE
 
-    move.w      (a6),d0
+    move.w      (a6),d0 * if the direction is 0, then it must be SUB
     btst        #8,d0
     bne         CONTINUE_SUBROUTINE
     jsr         SUBROUTINE 
     bra         MAIN_LOOP_PRINT
 CONTINUE_SUBROUTINE:
 
-    lsr.w       #3,d0
-    and.w       #7,d0
-    cmp.w       #2,d0
+    lsr.w       #3,d0 * the direction is is dn + <ea> -> <ea>
+    and.w       #7,d0 * then check that the destination is not an An or Dn.
+    cmp.w       #2,d0 * Distinguishes SUB from SUBX
     blt         SKIP_SUBROUTINE
     jsr         SUBROUTINE 
     bra         MAIN_LOOP_PRINT
@@ -553,15 +557,15 @@ SKIP_SUBROUTINE:
 SKIP_MOVEROUTINE:
 
     *Is this MOVEM
-    move.w      (a6),d0
-    lsr.w       #3,d0
+    move.w      (a6),d0 * crop the direction using
+    lsr.w       #3,d0 * the barrier between bytes and words.
     lsl.b       #1,d0
     lsr.w       #5,d0
     cmp.w       #$49,d0
     bne         SKIP_MOVEMROUTINE
 
-    move.w      (a6),d0
-    lsr.w       #3,d0
+    move.w      (a6),d0 * If the addressing mode is Dn,
+    lsr.w       #3,d0 * this is not movem.
     and.w       #7,d0
     cmp.w       #0,d0
     beq         SKIP_MOVEMROUTINE * get rid of ext
@@ -570,18 +574,13 @@ SKIP_MOVEROUTINE:
     bra         MAIN_LOOP_PRINT
 SKIP_MOVEMROUTINE:
 
-*put more op-code subroutine calls here.
-*Just like NOPROUTINE
-
 * the default subroutine if no other routines are called is
 * the data ROUTINE
     jsr         DATAROUTINE
 
+
 MAIN_LOOP_PRINT:
-    *TODO: Implement the window that waits
-    * for the user to press enter before it shows more lines
-    * of disassembled code
-    *TODO: Possibly add error checking before you print
+    * Finally, print the op-code.
     lea         BUFFER,a1
     move.b      #14,d0
     trap        #15
@@ -598,17 +597,19 @@ EXIT_PROGRAM:
 *-----------------------------------------------------------
 * Put your utility subroutines here
 
+
 INPUT_OR_EXIT:
 *Description:
 *Ensures that INPUT_START and INPUT_END
 *contain valid starting and ending addresses
 *or returns -1 if the program should terminate.
 *The addresses are valid if INPUT_END >= INPUT_START
+*and INPUT_START is even.
 *sets d7 to 0 for valid input and to -1 for exit.
 *Nothing changes other than INPUT_START, INPUT_END, and d7
 *Input: nothing
-*Output: d7.l
-    movem.l     d0-d6/a0-a6,-(sp)
+*Output: d7.l, INPUT_START, INPUT_END
+    movem.l     a1/d0/d1/d6,-(sp)
 
 INPUT_OR_EXIT_LOOP:
     *prompts for input
@@ -624,13 +625,12 @@ INPUT_OR_EXIT_LOOP:
     *If the size of the string is less than 1
     cmp.w       #1,d1
     blt         INPUT_OR_EXIT_INVALID
+    bne         INPUT_OR_EXIT_SKIP_Q_CHECK
 
     *program termination value
-    * FIXME: THIS Exists the program simply if the first character is q
-    * FIXME: If the start input is something like q1001000, then even though it is invalid,
-    * FIXME: The program will exit.
     cmp.b       #113,(a1) *113 is for 'q'
     beq         INPUT_OR_EXIT_TERMINATE *return exit code
+INPUT_OR_EXIT_SKIP_Q_CHECK:
 
     *convert the string into a long
     jsr         LONG_FROM_STRING
@@ -700,7 +700,7 @@ INPUT_OR_EXIT_INVALID_GT:
 INPUT_OR_EXIT_TERMINATE:
     move.l      #-1,d7
 INPUT_OR_EXIT_END:
-    movem.l     (sp)+,d0-d6/a0-a6
+    movem.l     (sp)+,a1/d0/d1/d6
     rts
 * End of INPUT_OR_EXIT
 
@@ -765,7 +765,7 @@ LONG_FROM_STRING:
 *Input: a1, d1.w
 *Output: d7.l, d6.l
 
-    movem.l     d0-d5/a0-a6,-(sp)
+    movem.l     d0/d1/a1,-(sp)
 
     * The default value of d7
     * is 0.
@@ -803,7 +803,7 @@ LONG_FROM_STRING_LOOP:
 
 LONG_FROM_STRING_LOOP_CONTINUE:
     lsl.l   #4,d6
-    add.l   d1,d6
+    add.l   d1,d6 * PUT the digit value in the least significant bit of d6.
     sub.b   #1,d0
     bra     LONG_FROM_STRING_LOOP
 
@@ -826,33 +826,33 @@ LONG_FROM_STRING_ERROR:
     move.l      #-1,d7
 
 LONG_FROM_STRING_END:
-    movem.l     (sp)+,d0-d5/a0-a6
+    movem.l     (sp)+,d0/d1/a1
     rts
 * End of LONG_FROM_STRING subroutine
 
-STRING_FROM_NIBBLE: *TODO: SEE if you can make this subroutine use d2.b just for the sake of consistency.
+STRING_FROM_NIBBLE:
 *Description:
-*Given the lower nibble at d1.b, will convert that into a char in the
+*Given the lower nibble at d2.b, will convert that into a char in the
 *memory pointed to by a1.
 *nothing other than a1 and the memory it points to will change
-*Input: a1, d1.b
+*Input: a1, d2.b
 *Output: a1 and the memory it points to
-    movem.l     d1,-(sp)
+    movem.l     d2,-(sp)
 
-    and.b       #$0f,d1 *get rid of extra bits.
+    and.b       #$0f,d2 *get rid of extra bits.
 
-    cmp.b       #9,d1
+    cmp.b       #9,d2
     bgt         STRING_FROM_NIBBLE_CHAR * is this byte A-F
-    add.b       #48,d1 * this byte is 0-9
-    move.b      d1,(a1)+
+    add.b       #48,d2 * this byte is 0-9
+    move.b      d2,(a1)+
     bra         STRING_FROM_NIBBLE_END
 
 STRING_FROM_NIBBLE_CHAR: *this byte is A-F
-    add.b       #55,d1
-    move.b      d1,(a1)+
+    add.b       #55,d2
+    move.b      d2,(a1)+
 
 STRING_FROM_NIBBLE_END:
-    movem.l     (sp)+,d1
+    movem.l     (sp)+,d2
     rts
 * End of STRING_FROM_NIBBLE
 
@@ -863,26 +863,17 @@ STRING_FROM_BYTE:
 *nothing other than a1 and the memory it points to will change
 *Input: a1, d2.b
 *Output: a1 and the memory it points to
-    movem.l     d0/d1,-(sp)
+    movem.l     d0,-(sp)
 
-    move.l      #0,d0 * loop variable. Used for shifting lift
-    move.l      #0,d1 * temp register for the byte
-
-STRING_FROM_BYTE_LOOP:
-    move.b      d2,d1 * get the byte
-    cmp.b       #8,d0 * is the loop over?
-    beq         STRING_FROM_BYTE_END
-
-    lsl.b       d0,d1  * gets rid of all excess more significant bits
-    lsr.b       #4,d1  * gets rid of all excess less significant bits
-
-    add.b       #4,d0  * Next time, shift to the lift 4 more bits
-
+    move.l      d2,d0
+    lsr.b       #4,d2
     jsr         STRING_FROM_NIBBLE
-    bra         STRING_FROM_BYTE_LOOP
+
+    move.l      d0,d2
+    jsr         STRING_FROM_NIBBLE
 
 STRING_FROM_BYTE_END:
-    movem.l     (sp)+,d0/d1
+    movem.l     (sp)+,d0
     rts
 * End of STRING_FROM_BYTE
 
@@ -893,27 +884,17 @@ STRING_FROM_WORD:
 *nothing other than a1 and the memory it points to will change
 *Input: a1, d2.w
 *Output: a1 and the memory it points to
-    movem.l     d0/d1,-(sp)
+    movem.l     d0,-(sp)
 
-    move.l      #0,d0 * loop variable. Used for shifting lift
-    move.l      #0,d1 * temp register for the word
+    move.l      d2,d0
+    lsr.w       #8,d2
+    jsr         STRING_FROM_BYTE
 
-STRING_FROM_WORD_LOOP:
-    move.w      d2,d1 * get the word
-    cmp.b       #16,d0 * is the loop over?
-    beq         STRING_FROM_WORD_END
-
-    lsl.w       d0,d1  * gets rid of all excess more significant bits
-    lsr.w       #6,d1  * gets rid of all excess less significant bits
-    lsr.w       #6,d1  * and moves the wanted nibble to the Least significant nibble
-
-    add.b       #4,d0  * Next time, shift to the lift 4 more bits
-
-    jsr         STRING_FROM_NIBBLE
-    bra         STRING_FROM_WORD_LOOP
+    move.l      d0,d2
+    jsr         STRING_FROM_BYTE
 
 STRING_FROM_WORD_END:
-    movem.l     (sp)+,d0/d1
+    movem.l     (sp)+,d0
     rts
 * End of STRING_FROM_WORD
 
@@ -936,7 +917,7 @@ STRING_FROM_LONG:
 COPY_STRING_A2_TO_A1:
 *Description:
 *Given a null terminated string at a2, will
-*copy th string to a1 except the terminating null.
+*copy the string to a1 except the terminating null.
 *Nothing other than a1 will change
 *Input: a1, a2
 *Output: a1
@@ -963,19 +944,12 @@ IS_EA_VALID:
 *If the effective address is valid, returns 0 in d7.l
 *Nothing should be affected other than a6, d7.l, a1,
 *and the memory a1 points to.
-*Nothing other than a1 will change
 *Input: a6, a1
 *Output: a6, d7.l, a1, and the memory pointed to by a1.
     movem.l     d0/d1,-(sp)
 
-
-    move.l      #0,d0
-    move.w      (a6),d0
-
-    lsl.w       #5,d0 * get the least significant six bits
-    lsl.w       #5,d0
-    lsr.w       #5,d0
-    lsr.w       #5,d0
+    move.w      (a6),d0 * Get the lest significant six bits at (a6)
+    and.l       #$3f,d0       
 
     move.l      d0,d1 * copy to d1.
 
@@ -1020,18 +994,18 @@ GET_LIGHT_PURPLE_SIZE:
 * the light purple size in http://goldencrystal.free.fr/M68kOpcodes-v2.3.pdf.
 * This subroutine will print the approperiate size (B|W|L) in the value pointed to by a1.
 * If the input is Invalid, prints ERROR_STRING.
-* returns the TEMP_VARIABLE.b.
+* returns the size in TEMP_VARIABLE.b.
 *Input: a6
 *Output: a1, TEMP_VARIABLE.b
     movem.l     d0/a2,-(sp)
 
-    move.w      (a6),d0 * get the bits at the 6th and 7th index (0-indexing from the right)
-    lsl.w       #4,d0
-    lsl.w       #4,d0
-    lsr.w       #7,d0
-    lsr.w       #7,d0
+    move.w      (a6),d0
+    
+    * get the bits at the 6th and 7th index (0-indexing from the right)
+    lsr.w       #6,d0
+    and.l       #3,d0
 
-    move.b      d0,TEMP_VARIABLE * return the size TEMP_VARIABLE.b
+    move.b      d0,TEMP_VARIABLE * return the size in TEMP_VARIABLE.b
 
     cmp.b       #0,d0
     beq         GET_LIGHT_PURPLE_SIZE_BYTE
@@ -1043,6 +1017,7 @@ GET_LIGHT_PURPLE_SIZE:
     beq         GET_LIGHT_PURPLE_SIZE_LONG
 
     *The defualt error case!
+    *Print a Clear error message so the programmer knows.
     lea         ERROR_STRING,a2
     jsr         COPY_STRING_A2_TO_A1
     bra         GET_LIGHT_PURPLE_SIZE_END
@@ -1072,14 +1047,12 @@ GET_A_REG_DIRECT:
 *nothing other than a1 and the memory it points to will change
 *Input: a1, d2.b
 *Output: a1 and the memory it points to
-    movem.l     d2,-(sp)
+    
+    move.b      #65,(a1)+ * Print A.
+    
+    move.b      d2,(a1)
+    add.b       #48,(a1)+
 
-    move.b      #65,(a1)+
-
-    add.b       #48,d2
-    move.b      d2,(a1)+
-
-    movem.l     (sp)+,d2
     rts
 * End of GET_A_REG_DIRECT
 
@@ -1091,14 +1064,12 @@ GET_D_REG_DIRECT:
 *nothing other than a1 and the memory it points to will change
 *Input: a1, d2.b
 *Output: a1 and the memory it points to
-    movem.l     d2,-(sp)
 
     move.b      #68,(a1)+
 
-    add.b       #48,d2
-    move.b      d2,(a1)+
+    move.b      d2,(a1)
+    add.b       #48,(a1)+
 
-    movem.l     (sp)+,d2
     rts
 * End of GET_D_REG_DIRECT
 
@@ -1154,13 +1125,13 @@ GET_INVALID_ADDRESSING_MODE:
 *nothing other than a1 and the memory it points to will change
 *Input: a1
 *Output: a1 and the memory it points to
-    movem.l     A2, -(sp)
+    movem.l     a2,-(sp)
 
     *lea         IAM_STRING,a2
     lea         ERROR_STRING,a2 * print a clear error message so the programmer may notice.
     jsr         COPY_STRING_A2_TO_A1
 
-    movem.l     (sp)+,A2
+    movem.l     (sp)+,a2
     rts
 * End of GET_INVALID_ADDRESSING_MODE
 
@@ -1183,20 +1154,30 @@ GET_EA: * Get the effective address.
 *It is YOUR responsibility to print anything you need to print before
 *or after GET_EA.
 *Nothing other than a1 and the value it points to will change.
-*input: a6, d2.w, d3.b
-*Output: a6, the value pointed to by a1
+*input: a6, d2.w, d3.b, a1
+*Output: a6, a1, and the value pointed to by a1
     movem.l     A2/D0-D3, -(sp)
     
     move.l      #0,d0
     move.w      d2,d0 * The instruction is in d0 from now.
 
-    move.l      d0,d2 * The register will be stored in d2.
-    and.w       #$0007,d2
+    * The register will be stored in d2.
+    and.l       #$7,d2
 
     move.l      d0,d1 * The mode will be stored in d1.
     lsr.w       #3,d1
-    and.w       #$0007,d1
+    and.w       #$7,d1
 
+    * Because of the jmp size variation issue I talked
+    * to the professor about, all jmps should be below
+    * the jmp table.
+    * Basically, we found that if you jmp down, the 
+    * jmp op-code is three words.
+    * If you jmp up, jmp could be two words or three words.
+    * This variation can wreck a jmp table.
+    * See how these will be encoded differently if you uncomment them:
+    * jmp GET_EA
+    * jmp GET_EA_JMP_TABLE
     lea         GET_EA_JMP_TABLE,a2
     mulu.w      #6,d1 * values between [0,42]
     jmp         (0,a2,d1)
@@ -1237,19 +1218,18 @@ GET_EA_110: * Invalid addressing mode
     bra         GET_EA_END
 
 GET_EA_111: * Absolute short, absolute long, immediate, and Invalid addressing mode.
-    *FIXME: THIS mode is non trivial. REVIEW IT AGAIN LATER IN THE QUARTER JUST TO BE SAFE!
     cmp.b       #0,d2
     bne         GET_EA_111_NOT_ABS_SHORT
-    move.b      #36,(a1)+
-    move.w      (a6)+,d2
+    move.b      #36,(a1)+ * print the dollar sign.
+    move.w      (a6)+,d2 * Get the address and print it.
     jsr         STRING_FROM_WORD
     bra         GET_EA_END
 GET_EA_111_NOT_ABS_SHORT:
 
     cmp.b       #1,d2
     bne         GET_EA_111_NOT_ABS_LONG
-    move.b      #36,(a1)+
-    move.l      (a6)+,d2
+    move.b      #36,(a1)+ * print the dollar sign.
+    move.l      (a6)+,d2 * the same as absolute word, but using a long instead
     jsr         STRING_FROM_LONG
     bra         GET_EA_END
 GET_EA_111_NOT_ABS_LONG:
@@ -1263,7 +1243,7 @@ GET_EA_111_NOT_ABS_LONG:
 
     cmp.b       #0,d3 * Immediate byte!
     bne         GET_EA_111_IMMEDIATE_NOT_B
-    move.w      (a6)+,d2
+    move.w      (a6)+,d2 * the byte is in the low-order byte of (a6).w.
     jsr         STRING_FROM_BYTE *prints the least significant byte
     bra         GET_EA_END
 GET_EA_111_IMMEDIATE_NOT_B:
@@ -1281,11 +1261,7 @@ GET_EA_111_IMMEDIATE_NOT_W:
     jsr         STRING_FROM_LONG *prints the long
     bra         GET_EA_END
 GET_EA_111_IMMEDIATE_NOT_L:
-
-    *Programmer error! Didn't set d3.b properly
-    lea         ERROR_STRING,a2
-    jsr         COPY_STRING_A2_TO_A1 * prints an error.
-    bra         GET_EA_END
+    *must be an invalid addressing mode!
 
 GET_EA_111_NOT_IMMEDIATE:
     *must be an invalid addressing mode!
@@ -1305,10 +1281,10 @@ LIKE_ANDROUTINE:
 *buffer and makes a6 point to the next op-code.
 *Requires a1 to point to buffer.
 *Assumes the effective addressing mode is valid.
-*Assume the op-code is printed.
-*input: a6
+*Assumes the op-code is printed.
+*input: a6, a1
 *Output: a6, a1, and the value pointed to by a1
-    movem.l     d0-d3/a2, -(sp) *TODO: check that everything used is copied.
+    movem.l     d0-d3/a2, -(sp)
 
     jsr         GET_LIGHT_PURPLE_SIZE * prints the size and sets TEMP_VARIABLE.b.
     move.b      TEMP_VARIABLE,d3 * set d3.b for future use. Don't use it from now on.
@@ -1334,6 +1310,7 @@ LIKE_ANDROUTINE:
     *d2.W is prepared
     *d3.b is prepared
     *a6 was incremented and is prepared.
+    *a1 is pointing to the buffer
     jsr         GET_EA  * print the effective address
 
     move.b      #COMMA,(a1)+ * print a comma
@@ -1346,15 +1323,15 @@ LIKE_ANDROUTINE_TO_EA: *the destination is EA
     move.l      d2,d0 * save d2
     move.b      d1,d2 * d2 contains the data register number now.
     jsr         GET_D_REG_DIRECT
+    
+    move.l      d0,d2 * load d2 again
 
     move.b      #COMMA,(a1)+ * print a comma
-
-
-    move.l      d0,d2 * load d2
 
     *d2.W is prepared
     *d3.b is prepared
     *a6 was incremented and is prepared.
+    *a1 points to the buffer.
     jsr         GET_EA
     BRA         LIKE_ANDROUTINE_END_LINE
 
@@ -1368,9 +1345,119 @@ LIKE_ANDROUTINE_END:
     rts
 * End of LIKE_ANDROUTINE subroutine
 
+SHIFTROUTINE:
+*Description:
+*A routine to handle shift op-codes like ASR/LSL and any more if necessary.
+*Requires a1 to point to buffer.
+*Requires a2 to point to the string of the shift ("ASR" for example).
+*Calls COPY_STRING_A2_TO_A1 and handles the size and EA of the op-code.
+*If the EA is invalid, calls DATAROUTINE.
+*input: a6, a2
+*Output: a6, a1, the value pointed to by a1
+    movem.l     a2/d0/d7/d2,-(sp)
+
+    * test the size.
+    move.w      (a6),d0
+    lsr.w       #6,d0
+    and.w       #3,d0
+    cmp.w       #3,d0
+    beq         SHIFTROUTINE_EA * This is LSL for an ea.
+
+
+    * Copy the provided string to a1
+    jsr         COPY_STRING_A2_TO_A1
+
+    *Print the size.
+    move.b      #PERIOD,(a1)+
+
+    * Get the size in TEMP_VARIABLE
+    jsr         GET_LIGHT_PURPLE_SIZE
+
+    move.b      #SPC,(a1)+ * Leave some spaces to print beautifully.
+    move.b      #SPC,(a1)+
+    move.b      #TAB,(a1)+
+
+    * Get the register/count
+    move.w      (a6),d2
+    lsr.w       #4,d2
+    lsr.w       #5,d2
+    and.w       #7,d2
+
+    move.w      (a6),d0
+    btst        #5,d0
+    bne         SHIFTROUTINE_REGISTER * If the sixth bit is 1, then the op-code uses a register.
+
+    * the shift op-code uses Immediate data.
+    cmp.b       #0,d2 * 0 rotation is actually 8.
+    bne         SHIFTROUTINE_IMMEDIATE
+
+    move.b       #8,d2 * make the rotation 8.
+
+SHIFTROUTINE_IMMEDIATE:
+    move.b      #35,(a1)+ * print #
+    add.b       #48,d2 * '0' to get values in range [1,8].
+    move.b      d2,(a1)+
+
+    bra         SHIFTROUTINE_D       
+
+SHIFTROUTINE_REGISTER: * The source is a data register.
+    jsr         GET_D_REG_DIRECT
+
+
+SHIFTROUTINE_D: * the destination is a data register
+    move.b      #COMMA,(a1)+
+
+    move.w      (a6)+,d2
+    and.w       #7,d2
+
+    jsr         GET_D_REG_DIRECT
+    bra         SHIFTROUTINE_END_LINE
+
+
+SHIFTROUTINE_EA: * This is a shift op-code for an ea destination.
+    jsr         IS_EA_VALID
+    cmp.l       #-1,d7
+    beq         SHIFTROUTINE_END
+
+    * Copy the provided string to a1
+    jsr         COPY_STRING_A2_TO_A1
+
+    *Print 4 spaces for beauty.
+    move.b      #SPC,(a1)+
+    move.b      #SPC,(a1)+
+    move.b      #SPC,(a1)+
+    move.b      #SPC,(a1)+
+    move.b      #TAB,(a1)+
+
+    *prepare to call GET_EA
+    move.w      (a6)+,d2
+
+    *d2.W is prepared
+    *d3.b is is never used. Don't set it. An immediate destination is not defined for shift.
+    *a6 was incremented and is prepared.
+    *a1 points to the buffer.
+    jsr         GET_EA
+
+SHIFTROUTINE_END_LINE:
+    * end the line and terminate the string
+    lea         LINE_END,a2
+    jsr         COPY_STRING_A2_TO_A1
+    move.b      #0,(a1)+
+
+SHIFTROUTINE_END:
+    movem.l     (sp)+,a2/d0/d7/d2
+    rts
+*   End of SHIFTROUTINE subroutine
+
+
+
+
 * Op-code Subroutines
 *-----------------------------------------------------------
 * Put your Op-Code Subroutine here
+
+
+
 
 ANDROUTINE:
 *Description:
@@ -1378,8 +1465,8 @@ ANDROUTINE:
 *into buffer and makes a6 point to the next op-code.
 *Requires a1 to point to buffer.
 *input: a6
-*Output: a6, the value pointed to by a1
-    movem.l     A0/A2-A5/D0-D7, -(sp)
+*Output: a6, a1, and the value pointed to by a1
+    movem.l     a2/d7,-(sp)
 
     * Check the validty of the addressing mode first.
     jsr         IS_EA_VALID
@@ -1392,9 +1479,8 @@ ANDROUTINE:
     jsr         LIKE_ANDROUTINE
 
 ANDROUTINE_END:
-    movem.l     (sp)+,A0/A2-A5/D0-D7
+    movem.l     (sp)+,a2/d7
     rts
-
 * End of ANDROUTINE subroutine
 
 NOPROUTINE:
@@ -1403,7 +1489,7 @@ NOPROUTINE:
 *Loads "NOP" into BUFFER and increments a6 by two bytes
 *input: a6
 *Output: a6, a1, the value pointed to by a1
-    movem.l     A0/A2-A5/D0-D7, -(sp)
+    movem.l     a2,-(sp)
     *If needed, could optimize memory by not copying anything except a2
 
     lea         NOP_OPCODE,a2
@@ -1411,10 +1497,8 @@ NOPROUTINE:
     move.b      #0,(a1)+ *terminate the string
     adda.l      #2,a6
 
-
-    movem.l     (sp)+,A0/A2-A5/D0-D7
+    movem.l     (sp)+,a2
     rts
-
 * End of NOPROUTINE subroutine
 
 RTSROUTINE:
@@ -1423,18 +1507,15 @@ RTSROUTINE:
 *Loads "RTS" into BUFFER and increments a6 by two bytes
 *input: a6
 *Output: a6, a1, and the value pointed to by a1
-    movem.l     A0/A2-A5/D0-D7, -(sp)
-    *If needed, could optimize memory by not copying anything except a2
+    movem.l     a2,-(sp)
 
     lea         RTS_OPCODE,a2
     jsr         COPY_STRING_A2_TO_A1
     move.b      #0,(a1)+ *terminate the string
     adda.l      #2,a6
 
-
-    movem.l     (sp)+,A0/A2-A5/D0-D7
+    movem.l     (sp)+,a2
     rts
-
 * End of RTSROUTINE subroutine
 
 JSRROUTINE:
@@ -1443,9 +1524,9 @@ JSRROUTINE:
 *Loads "JSR" into BUFFER and handles its EA.
 *If the EA is invalid, calls DATAROUTINE.
 *input: a6
-*Output: a6, a1, the value pointed to by a1
-    movem.l     A0/A2-A5/D0-D7, -(sp)
-    *could optimize by not copying anything except a2, d7, d2, and d3
+*Output: a6, a1, and the value pointed to by a1
+    movem.l     a2/d7/d2, -(sp)
+    *could optimize by not copying anything except a2, d7, d2
 
     jsr         IS_EA_VALID
     cmp.l       #-1,d7
@@ -1456,11 +1537,12 @@ JSRROUTINE:
 
     *prepare to call GET_EA
     move.w      (a6)+,d2
-    move.b      #2,d3 * FIXME: setting the size is meaningless.
 
     *d2.W is prepared
-    *d3.b is prepared
+    *d3.b should never be used because jsr doesn't accept immediate addressing modes.
+    *Don't change d3 because it should not be used.
     *a6 was incremented and is prepared.
+    *a1 points to the buffer
     jsr         GET_EA    
     
     * end the line and terminate the string
@@ -1469,9 +1551,8 @@ JSRROUTINE:
     move.b      #0,(a1)+
 
 JSRROUTINE_END:
-    movem.l     (sp)+,A0/A2-A5/D0-D7
+    movem.l     (sp)+,a2/d7/d2
     rts
-
 * End of JSRROUTINE subroutine
 
 NOTROUTINE:
@@ -1480,8 +1561,8 @@ NOTROUTINE:
 *Loads "NOT" into BUFFER and handles its size and EA.
 *If the EA is invalid, calls DATAROUTINE.
 *input: a6
-*Output: a6, a1, the value pointed to by a1
-    movem.l     A0/A2-A5/D0-D7, -(sp)
+*Output: a6, a1, and the value pointed to by a1
+    movem.l     a2/d7/d2/d3, -(sp)
     *could optimize by not copying anything except a2, d7, d2, and d3
 
     jsr         IS_EA_VALID
@@ -1505,6 +1586,7 @@ NOTROUTINE:
     *d2.W is prepared
     *d3.b is prepared
     *a6 was incremented and is prepared.
+    *a1 points to the buffer
     jsr         GET_EA    
     
     * end the line and terminate the string
@@ -1513,9 +1595,8 @@ NOTROUTINE:
     move.b      #0,(a1)+
 
 NOTROUTINE_END:
-    movem.l     (sp)+,A0/A2-A5/D0-D7
+    movem.l     (sp)+,a2/d7/d2/d3
     rts
-
 * End of NOTROUTINE subroutine
 
 LEAROUTINE:
@@ -1524,8 +1605,8 @@ LEAROUTINE:
 *Loads "LEA" into BUFFER and handles its EA.
 *If the EA is invalid, calls DATAROUTINE.
 *input: a6
-*Output: a6, a1, the value pointed to by a1
-    movem.l     A0/A2-A5/D0-D7, -(sp)
+*Output: a6, a1, and the value pointed to by a1
+    movem.l     a2/d0/d7/d2,-(sp)
     *could optimize by not copying anything except a2, d0, d7, d2, and d3
 
     jsr         IS_EA_VALID
@@ -1535,7 +1616,7 @@ LEAROUTINE:
     lea         LEA_OPCODE,a2
     jsr         COPY_STRING_A2_TO_A1
 
-    *get the register and put in d0
+    *get the address register and put it in d0
     move.w      (a6),d0
     lsl.w       #4,d0
     lsr.w       #7,d0
@@ -1543,11 +1624,11 @@ LEAROUTINE:
 
     *prepare to call GET_EA
     move.w      (a6)+,d2
-    move.b      #2,d3
 
     *d2.W is prepared
-    *d3.b is prepared
+    *d3.b is not used. lea doesn't use immediate data.
     *a6 was incremented and is prepared.
+    *a1 points to the buffer.
     jsr         GET_EA
 
     *print a comma
@@ -1563,9 +1644,8 @@ LEAROUTINE:
     move.b      #0,(a1)+
 
 LEAROUTINE_END:
-    movem.l     (sp)+,A0/A2-A5/D0-D7
+    movem.l     (sp)+,a2/d0/d7/d2
     rts
-
 * End of LEAROUTINE subroutine
 
 MULSROUTINE:
@@ -1574,9 +1654,8 @@ MULSROUTINE:
 *Loads "MULS" into BUFFER and handles its EA.
 *If the EA is invalid, calls DATAROUTINE.
 *input: a6
-*Output: a6, a1, the value pointed to by a1
-    movem.l     A0/A2-A5/D0-D7, -(sp)
-    *could optimize by not copying anything except a2, d0, d7, d2, and d3
+*Output: a6, a1, and the value pointed to by a1
+    movem.l     a2/d0/d2/d3/d7,-(sp)
 
     jsr         IS_EA_VALID
     cmp.l       #-1,d7
@@ -1585,7 +1664,7 @@ MULSROUTINE:
     lea         MULS_OPCODE,a2
     jsr         COPY_STRING_A2_TO_A1
 
-    *get the register and put in d0
+    *get the register and put it in d0
     move.w      (a6),d0
     lsl.w       #4,d0
     lsr.w       #7,d0
@@ -1596,8 +1675,9 @@ MULSROUTINE:
     move.b      #1,d3
 
     *d2.W is prepared
-    *d3.b is prepared
+    *d3.b is prepared. d3.b is always a word.
     *a6 was incremented and is prepared.
+    *a1 points to the buffer.
     jsr         GET_EA
 
     *print a comma
@@ -1605,7 +1685,7 @@ MULSROUTINE:
 
     *print the data register
     move.b      d0,d2
-    jsr         GET_D_REG_DIRECT    
+    jsr         GET_D_REG_DIRECT   
     
     * end the line and terminate the string
     lea         LINE_END,a2
@@ -1613,7 +1693,7 @@ MULSROUTINE:
     move.b      #0,(a1)+
 
 MULSROUTINE_END:
-    movem.l     (sp)+,A0/A2-A5/D0-D7
+    movem.l     (sp)+,a2/d0/d2/d3/d7
     rts
 * End of MULSROUTINE subroutine
 
@@ -1623,105 +1703,13 @@ LSLROUTINE:
 *Loads "LSL" into BUFFER and handles its size and EA.
 *If the EA is invalid, calls DATAROUTINE.
 *input: a6
-*Output: a6, a1, the value pointed to by a1
-    movem.l     A0/A2-A5/D0-D7, -(sp)
-    *could optimize by not copying anything except a2, d0, d7, d2, and d3
-
-    * test the size.
-    move.w      (a6),d0
-    lsr.w       #6,d0
-    and.w       #3,d0
-    cmp.w       #3,d0
-    beq         LSLROUTINE_EA * This is LSL for an ea.
-
-
-    * This is LSL for data registers
-    lea         LSL_OPCODE,a2
-    jsr         COPY_STRING_A2_TO_A1
-
-    *Print the size.
-    move.b      #PERIOD,(a1)+
-
-    * Get the size in TEMP_VARIABLE
-    jsr         GET_LIGHT_PURPLE_SIZE
-
-    move.b      #SPC,(a1)+ * Leave some spaces to print beautifully.
-    move.b      #SPC,(a1)+
-    move.b      #TAB,(a1)+
-
-    * Get the register/count
-    move.w      (a6),d2
-    lsr.w       #4,d2
-    lsr.w       #5,d2
-    and.w       #7,d2
-
-    move.w      (a6),d0
-    btst        #5,d0
-    bne         LSLROUTINE_REGISTER * If the sixth bit is 1, then LSL uses a register.
-
-    * LSL uses Immediate data.
-    cmp.b       #0,d2
-    beq         LSLROUTINE_MAKE8
-
-LSLROUTINE_IMMEDIATE:
-    move.b      #35,(a1)+ * print #
-    add.w       #48,d2 * '0' to get values in range [1,8].
-    move.b      d2,(a1)+
-
-    bra         LSLROUTINE_D
-
-LSLROUTINE_MAKE8:
-    add.b       #8,d2
-    bra         LSLROUTINE_IMMEDIATE    
-
-
-LSLROUTINE_REGISTER: * The source is a data register.
-    jsr         GET_D_REG_DIRECT
-
-
-LSLROUTINE_D: * the destination is a data register
-    move.b      #COMMA,(a1)+
-
-    move.w      (a6),d2
-    and.w       #7,d2
-
-    jsr         GET_D_REG_DIRECT
-    adda.l      #2,a6   * increment a6
-    bra         LSLROUTINE_END_LINE
-
-
-LSLROUTINE_EA: * This is LSL for an ea destination.
-    jsr         IS_EA_VALID
-    cmp.l       #-1,d7
-    beq         LSLROUTINE_END
+*Output: a6, a1, and the value pointed to by a1
+    movem.l     a2,-(sp)
 
     lea         LSL_OPCODE,a2
-    jsr         COPY_STRING_A2_TO_A1
+    jsr         SHIFTROUTINE
 
-    *Print 4 spaces for beauty.
-    move.b      #SPC,(a1)+
-    move.b      #SPC,(a1)+
-    move.b      #SPC,(a1)+
-    move.b      #SPC,(a1)+
-    move.b      #TAB,(a1)+
-
-    *prepare to call GET_EA
-    move.w      (a6)+,d2
-    move.b      #1,d3 * word size. FIXME: Unnecessary. Delete
-
-    *d2.W is prepared
-    *d3.b is prepared
-    *a6 was incremented and is prepared.
-    jsr         GET_EA
-
-LSLROUTINE_END_LINE:
-    * end the line and terminate the string
-    lea         LINE_END,a2
-    jsr         COPY_STRING_A2_TO_A1
-    move.b      #0,(a1)+
-
-LSLROUTINE_END:
-    movem.l     (sp)+,A0/A2-A5/D0-D7
+    movem.l     (sp)+,a2
     rts
 
 * End of LSLROUTINE subroutine
@@ -1732,107 +1720,14 @@ ASRROUTINE:
 *Loads "ASR" into BUFFER and handles its size and EA.
 *If the EA is invalid, calls DATAROUTINE.
 *input: a6
-*Output: a6, a1, the value pointed to by a1
-    movem.l     A0/A2-A5/D0-D7, -(sp)
-    *could optimize by not copying anything except a2, d0, d7, d2, and d3
-
-    * test the size.
-    move.w      (a6),d0
-    lsr.w       #6,d0
-    and.w       #3,d0
-    cmp.w       #3,d0
-    beq         ASRROUTINE_EA * This is ASR for an ea.
-
-
-    * This is ASR for data registers
-    lea         ASR_OPCODE,a2
-    jsr         COPY_STRING_A2_TO_A1
-
-    *Print the size.
-    move.b      #PERIOD,(a1)+
-
-    * Get the size in TEMP_VARIABLE
-    jsr         GET_LIGHT_PURPLE_SIZE
-
-    move.b      #SPC,(a1)+ * Leave some spaces to print beautifully.
-    move.b      #SPC,(a1)+
-    move.b      #TAB,(a1)+
-
-    * Get the register/count
-    move.w      (a6),d2
-    lsr.w       #4,d2
-    lsr.w       #5,d2
-    and.w       #7,d2
-
-    move.w      (a6),d0
-    btst        #5,d0
-    bne         ASRROUTINE_REGISTER * If the sixth bit is 1, then ASR uses a register.
-
-    * ASR uses Immediate data.
-    cmp.b       #0,d2
-    beq         ASRROUTINE_MAKE8
-
-ASRROUTINE_IMMEDIATE:
-    move.b      #35,(a1)+ * print #
-    add.w       #48,d2 * '0' to get values in range [1,8].
-    move.b      d2,(a1)+
-
-    bra         ASRROUTINE_D
-
-ASRROUTINE_MAKE8:
-    add.b       #8,d2
-    bra         ASRROUTINE_IMMEDIATE    
-
-
-ASRROUTINE_REGISTER: * The source is a data register.
-    jsr         GET_D_REG_DIRECT
-
-
-ASRROUTINE_D: * the destination is a data register
-    move.b      #COMMA,(a1)+
-
-    move.w      (a6),d2
-    and.w       #7,d2
-
-    jsr         GET_D_REG_DIRECT
-    adda.l      #2,a6   * increment a6
-    bra         ASRROUTINE_END_LINE
-
-
-ASRROUTINE_EA: * This is ASR for an ea destination.
-    jsr         IS_EA_VALID
-    cmp.l       #-1,d7
-    beq         ASRROUTINE_END
+*Output: a6, a1, and the value pointed to by a1
+    movem.l     a2,-(sp)
 
     lea         ASR_OPCODE,a2
-    jsr         COPY_STRING_A2_TO_A1
+    jsr         SHIFTROUTINE
 
-    *Print 4 spaces for beauty.
-    move.b      #SPC,(a1)+
-    move.b      #SPC,(a1)+
-    move.b      #SPC,(a1)+
-    move.b      #SPC,(a1)+
-    move.b      #TAB,(a1)+
-
-    *prepare to call GET_EA
-    move.w      (a6)+,d2
-    move.b      #1,d3 * word size. FIXME: Unnecessary. Delete
-
-    *d2.W is prepared
-    *d3.b is prepared
-    *a6 was incremented and is prepared.
-    jsr         GET_EA
-
-ASRROUTINE_END_LINE:
-    * end the line and terminate the string
-    lea         LINE_END,a2
-    jsr         COPY_STRING_A2_TO_A1
-    move.b      #0,(a1)+
-
-ASRROUTINE_END:
-    movem.l     (sp)+,A0/A2-A5/D0-D7
+    movem.l     (sp)+,a2
     rts
-
 * End of ASRROUTINE subroutine
 
 DATAROUTINE:
@@ -1842,23 +1737,19 @@ DATAROUTINE:
 *Requires a1 to point to buffer.
 *input: a6
 *Output: a6, the value pointed to by a1
-    movem.l     A0/A2-A5/D0-D7, -(sp)
-    *if needed, could optimize memory by only copying a2 and d2
+    movem.l     a2/d2,-(sp)
 
     lea         DATA_OPCODE,a2
     jsr         COPY_STRING_A2_TO_A1 *Copy "DATA: $" into a1
 
-    move.w      (a6),d2
+    move.w      (a6)+,d2
     jsr         STRING_FROM_WORD     *Put the word into string from
 
     lea         LINE_END,a2
     jsr         COPY_STRING_A2_TO_A1
-
     move.b      #0,(a1)+             *terminate the string
 
-    adda.l      #2,a6                *Move forward two bytes with a6
-
-    movem.l     (sp)+,A0/A2-A5/D0-D7
+    movem.l     (sp)+,a2/d2
     rts
 
 * End of DATAROUTINE subroutine
@@ -1871,7 +1762,7 @@ ADDROUTINE:
 *Requires a1 to point to buffer.
 *input: a6
 *Output: a6, a1, and the value pointed to by a1
-    movem.l     A0/A2-A5/D0-D7, -(sp)
+    movem.l     d7/a2, -(sp)
 
     * Check the validty of the addressing mode first.
     jsr         IS_EA_VALID
@@ -1879,12 +1770,12 @@ ADDROUTINE:
     beq         ADDROUTINE_END
 
     lea         ADD_OPCODE,a2
-    jsr         COPY_STRING_A2_TO_A1 *Copy "AND." into a1
+    jsr         COPY_STRING_A2_TO_A1 *Copy "ADD." into a1
 
     jsr         LIKE_ANDROUTINE * ADD is structured like AND
 
 ADDROUTINE_END:
-    movem.l     (sp)+,A0/A2-A5/D0-D7
+    movem.l     (sp)+,d7/a2
     rts
 * End of ADDROUTINE subroutine
 
@@ -1895,7 +1786,7 @@ SUBROUTINE:
 *Requires a1 to point to buffer.
 *input: a6
 *Output: a6, a1, and the value pointed to by a1
-    movem.l     A0/A2-A5/D0-D7, -(sp)
+    movem.l     d7/a2, -(sp)
 
     * Check the validty of the addressing mode first.
     jsr         IS_EA_VALID
@@ -1903,15 +1794,17 @@ SUBROUTINE:
     beq         SUBROUTINE_END
 
     lea         SUB_OPCODE,a2
-    jsr         COPY_STRING_A2_TO_A1 *Copy "AND." into a1
+    jsr         COPY_STRING_A2_TO_A1 *Copy "SUB." into a1
 
     jsr         LIKE_ANDROUTINE * SUB is structured like AND
 
 SUBROUTINE_END:
-    movem.l     (sp)+,A0/A2-A5/D0-D7
+    movem.l     (sp)+,d7/a2
     rts
 
 * End of SUBROUTINE subroutine
+
+*FIXME: I stopped reviwing right before move.
 
 MOVEROUTINE:
 *Description:
