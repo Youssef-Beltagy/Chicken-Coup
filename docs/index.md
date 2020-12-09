@@ -4,10 +4,9 @@ This is a disassembler for Motorola's 68k microprocessor. Given an address in me
 
 
 
-## Deadline 11/21/2020 
+## Team members
 
-We have a month. We can do it.
-
+Youssef Beltagy, the lonely chicken
 
 
 ## Specifications
@@ -43,8 +42,8 @@ A list of all required tasks.
 ## Autumn 2020 Requirement:
 
 1. [x] NOP
-2. [ ] MOVE
-3. [ ] MOVEM
+2. [x] MOVE
+3. [x] MOVEM
 4. [x] ADD
 5. [x] SUB
 6. [x] MULS
@@ -56,7 +55,7 @@ A list of all required tasks.
 12. [ ] LSR -- No longer required (Must not implement or I will lose points)
 13. [ ] ASL -- No longer required (Must not implement or I will lose points)
 14. [x] ASR
-15. [ ] Bcc     (BLT, BGE, BEQ)
+15. [x] Bcc     (BLT, BGE, BEQ)
 16. [x] JSR
 17. [x] RTS
 18. [x] BRA
@@ -377,3 +376,21 @@ SHIFTROUTINE:
 *input: a6, a2
 *Output: a6, a1, the value pointed to by a1
 ```
+
+### Appendix
+
+#### TODO
+
+- Review MOVE
+- Review MOVEM
+- Review BCC
+- Clean up the report.
+- Add table of Signatures
+
+
+#### Coding Problems 
+
+ - LEA: Loads the memory location to an address register. It modifies an address register to point to a new location. Once I realized that, I made a COPY_STRING_A2_TO_A1 subroutine to copy strings into A1 without pointing A1 to new memory.
+ - BRA: The address of the instruction is the address of bra + the difference. This was different from what we said in class.
+ - Jmp: If you jmp to a line below the current line, jmp is three words. If you jmp to a line above the current line, jmp can be two words. This messes up with jmp tables.
+  
