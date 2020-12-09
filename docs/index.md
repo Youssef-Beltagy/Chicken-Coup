@@ -3,6 +3,8 @@
 This is a disassembler for Motorola's 68k microprocessor. Given an address in memory, this disassembler will rewrite the code there. 
 
 
+[Presentation Link.](https://youtu.be/Cz3WhxKClwM)
+
 
 ## Team members
 
@@ -163,7 +165,7 @@ LSLROUTINE:
     rts
 
 * End of LSLROUTINE subroutine
-``` 
+```
 
 #### Utility Subroutines
 
@@ -391,6 +393,5 @@ SHIFTROUTINE:
 #### Coding Problems 
 
  - LEA: Loads the memory location to an address register. It modifies an address register to point to a new location. Once I realized that, I made a COPY_STRING_A2_TO_A1 subroutine to copy strings into A1 without pointing A1 to new memory.
- - BRA: The address of the instruction is the address of bra + the difference. This was different from what we said in class.
+ - BRA: The address of the instruction is the address of bra + 2 + the difference. This was different from what we said in class.
  - Jmp: If you jmp to a line below the current line, jmp is three words. If you jmp to a line above the current line, jmp can be two words. This messes up with jmp tables.
-  
