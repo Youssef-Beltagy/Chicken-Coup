@@ -8,211 +8,6 @@
     ORG    $1000
 START:                  ; first instruction of program
 
-* FIXME: For Testing, DELETE LATER *============================
-    bra         SKIP_TESTS * don't actually run the tests
-
-    movem.w         (a1)+,d4-a5
-    movem.l         d1-a7,-(a1)
-    movem.w         $1000,d0-a0
-    movem.l         d0-a3,$2000
-    movem.w         d0-a3,$f000
-    movem.l         a7/d6/d2,$f000
-
-    ext             d3
-
-    movem.w         d0-a3,(0,a6)
-    movem.w         d0-a6,(0,a6,d5)
-
-    bra         $1002
-    bra         $1102
-    jsr         START
-    jmp         START
-    jmp         SKIP_TESTS
-    jsr         SKIP_TESTS
-
-    asr         (a0)
-    asr         (a1)+
-    asr         -(a2)
-    asr         $ab
-    asr         $fd20
-    asr         (0,a3)
-    asr         (2,a4,d0)
-    asr.b       #1,d1
-    asr.w       #2,d2
-    asr.l       #3,d3
-    asr.b       #4,d4
-    asr.w       #5,d5
-    asr.l       #6,d6
-    asr.b       #7,d7
-    asr.w       #8,d0
-    asr.l       d0,d0
-    asr.b       d1,d0
-    asr.w       d2,d0
-    asr.l       d4,d0
-
-    asl         (a0)
-    asl         (a1)+
-    asl         -(a2)
-    asl         $ab
-    asl         $fd20
-    asl         (0,a3)
-    asl         (2,a4,d0)
-    asl.b       #1,d1
-    asl.w       #2,d2
-    asl.l       #3,d3
-    asl.b       #4,d4
-    asl.w       #5,d5
-    asl.l       #6,d6
-    asl.b       #7,d7
-    asl.w       #8,d0
-    asl.l       d0,d0
-    asl.b       d1,d0
-    asl.w       d2,d0
-    asl.l       d4,d0
-
-    lsl         (a0)
-    lsl         (a1)+
-    lsl         -(a2)
-    lsl         $ab
-    lsl         $fd20
-    lsl         (0,a3)
-    lsl         (2,a4,d0)
-    lsl.b       #1,d1
-    lsl.w       #2,d2
-    lsl.l       #3,d3
-    lsl.b       #4,d4
-    lsl.w       #5,d5
-    lsl.l       #6,d6
-    lsl.b       #7,d7
-    lsl.w       #8,d0
-    lsl.l       d0,d0
-    lsl.b       d1,d0
-    lsl.w       d2,d0
-    lsl.l       d4,d0
-
-    lsr         (a0)
-    lsr         (a1)+
-    lsr         -(a2)
-    lsr         $ab
-    lsr         $fd20
-    lsr         (0,a3)
-    lsr         (2,a4,d0)
-    lsr.b       #1,d1
-    lsr.w       #2,d2
-    lsr.l       #3,d3
-    lsr.b       #4,d4
-    lsr.w       #5,d5
-    lsr.l       #6,d6
-    lsr.b       #7,d7
-    lsr.w       #8,d0
-    lsr.l       d0,d0
-    lsr.b       d1,d0
-    lsr.w       d2,d0
-    lsr.l       d4,d0
-
-
-    muls        d0,d1
-    muls.w      d2,d3
-    muls        (a0),d4
-    muls        (a1)+,d5
-    muls        -(a2),d6
-    muls        $F0F0,d7
-    muls        $01,d0
-    muls        #$01,d1
-    muls        #$20,d2
-    muls        #$aefa,d3
-    muls        #$1102,d4
-    muls        (10,a2,d3),d5
-    muls        ($a,a4),d6
-    muls        (10,pc,d3),d7
-    muls        ($b,pc),d0
-
-    lea         START,a0
-    lea         $00,a1
-    lea         $ff,a2
-    lea         $1000,a3
-    lea         $abcd,a4
-    lea         $8000,a5
-    lea         (a6),a7
-    lea         (a7),a2
-    lea         (a4),a2
-    lea         (0,a2,d2),a5
-    lea         (20,a4),a7
-
-    not.b       d0
-    not.w       d1
-    not.l       d2
-    not.b       (a3)
-    not.w       (a4)
-    not.l       (a5)
-    not.b       (a6)+
-    not.w       (a7)+
-    not.l       (a0)+
-    not.b       -(a0)
-    not.w       -(a1)
-    not.w       -(a2)
-    not.b       $00
-    not.w       $ff
-    not.l       $A000
-    not.b       $00000fff
-    not.w       $00aabbcc
-    not.b       (5,a2)
-    not.w       (3,a2,d2)
-    not.l       (3,a5)
-    not.b       (10,a6,d5)
-    jsr         (a0)
-    jsr         (a1)
-    jsr         (a2)
-    jsr         (a3)
-    jsr         (a4)
-    jsr         (a5)
-    jsr         (a6)
-    jsr         (a7)
-    jsr         (a3)
-    jsr         (a4)
-    jsr         $8000
-    jsr         $90
-    jsr         $ff
-    jsr         $ffff
-    jsr         $ffffffff
-    jsr         (10,a5)
-    jsr         (5,a4,d2)
-    jsr         (5,PC)
-    jsr         (2,PC,d4)
-    * write your opcodes 
-    bra         BCCROUTINE_END
-    nop *
-    and.l       #4,d3
-    beq         MAIN_LOOP
-    bra         START
-    beq         MAIN_LOOP_PRINT
-    bra         DATAROUTINE
-    blt         DATAROUTINE
-    beq         DATAROUTINE
-    bgt         DATAROUTINE
-    bge         DATAROUTINE
-    rts
-    swap        d0
-    adda.l      #1,a0
-    add.l       #3,d0
-    add.b       #23,d1
-    move.l      #32,a2
-    nop *
-    bra         SKIP_TESTS
-    beq         INPUT_OR_EXIT
-    jsr         INPUT_OR_EXIT
-    rts
-    nop *
-    movem.l     d0-a7,-(sp)
-    movem.l     d0-a7,(sp)
-    movem.l     (sp)+,d0-a7
-    movem.l     (sp)+,d0-a7
-    nop *
-* FIXME: For Testing, DELETE LATER *============================
-
-
-SKIP_TESTS:
-
     * print the start message
     lea         PROGRAM_START_MESSAGE,a1
     move.b      #14,d0
@@ -230,33 +25,6 @@ MAIN_GET_USER_INPUT:
     jsr         INPUT_OR_EXIT
     cmp.l       #-1,d7
     beq         EXIT_PROGRAM
-
-* FIXME: For Testing, DELETE LATER *============================
-    *prints the two hex digits
-    move.l      INPUT_START,d1 *
-    move.b      #15,d0 *
-    move.b      #16,d2 *
-    trap        #15 *
-    
-    *starts a new line
-    lea         LINE_END,a1 *
-    move.b      #14,d0 *
-    trap        #15 *
-
-    move.l      INPUT_END,d1 *
-    move.b      #15,d0 *
-    move.b      #16,d2 *
-    trap        #15 * 
-
-    *starts a new line
-    lea         LINE_END,a1 *
-    move.b      #14,d0 *
-    trap        #15 *
-
-* FIXME: For Testing, DELETE LATER *============================
-
-
-*TODO: Implement a subroutine for the loop if necessary
 
     *The Main Loop
     movea.l     INPUT_START,a6 * Initialize the loop.
@@ -641,6 +409,13 @@ INPUT_OR_EXIT_SKIP_Q_CHECK:
     btst        #0,d6
     bne         INPUT_OR_EXIT_INVALID_ODD 
 
+    *Test that the most significant byte is 00.
+    move.l      d6,d0
+    move.l      #24,d1
+    lsr.l       d1,d0
+    cmp.b       #0,d0
+    bne         INPUT_OR_EXIT_INVALID_NOT_00
+
     *copy the input
     move.l      d6,INPUT_START
     
@@ -661,6 +436,13 @@ INPUT_OR_EXIT_SKIP_Q_CHECK:
 
     *copy the input
     move.l      d6,INPUT_END
+
+    *Test that the most significant byte is 00.
+    move.l      d6,d0
+    move.l      #24,d1
+    lsr.l       d1,d0
+    cmp.b       #0,d0
+    bne         INPUT_OR_EXIT_INVALID_NOT_00
 
     *Check the validity of the addresses
     cmp.l       INPUT_START,d6
@@ -693,6 +475,14 @@ INPUT_OR_EXIT_INVALID_GT:
     *prints invalid message when the start address is greater
     *than the ending address and prompts for input again.
     lea         INVALID_MESSAGE_GT,a1
+    move.b      #14,d0
+    trap        #15
+    bra         INPUT_OR_EXIT_LOOP
+
+INPUT_OR_EXIT_INVALID_NOT_00:
+    *prints invalid message when the most significant byte of the
+    *address is not 0 and prompts for input again.
+    lea         INVALID_MESSAGE_NOT_00,a1
     move.b      #14,d0
     trap        #15
     bra         INPUT_OR_EXIT_LOOP
@@ -2358,6 +2148,9 @@ INVALID_MESSAGE_ODD
 INVALID_MESSAGE_GT
     dc.b    'Invalid input: The start address can not be greater than the end address.',CR,LF,0
 
+INVALID_MESSAGE_NOT_00
+    dc.b    'Invalid input: The most significant byte must be $00.',CR,LF,0
+
 WAIT_INVALID_MESSAGE
     dc.b    'Invalid input: press enter or q.'
 
@@ -2381,17 +2174,17 @@ PROGRAM_START_MESSAGE
     dc.b    TAB,TAB,TAB,TAB,'           ',34,' ',34,' ',CR,LF
     dc.b    CR,LF
     dc.b    'A Motorola 68K disassembler.',CR,LF
+    dc.b    CR,LF
     dc.b    TAB,'--BY Youssef Beltagy (ybeltagy or the Chicken Lord)',CR,LF
     dc.b    TAB,'Wait! Am I organizing a coup against myself?!',CR,LF
     dc.b    TAB,'No, it must be against humanity',39,'s oppression of chickens!',CR,LF
     dc.b    CR,LF
     dc.b    'Please input your addresses as 8 hex-digits!',CR,LF
+    dc.b    'The most significant byte must be $00.',CR,LF
     dc.b    'When the program pauses, press enter to continue or q to exit.',CR,LF,LF,0
 
 
     END    START        ; last line of source
-
-
 
 
 *~Font name~Courier New~
