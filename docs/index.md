@@ -2,13 +2,14 @@
 
 This is a disassembler for Motorola's 68k microprocessor. Given an address in memory, this disassembler will rewrite the code there. 
 
-
 [Presentation Link.](https://youtu.be/Cz3WhxKClwM)
+
 
 
 ## Team members
 
 Youssef Beltagy, the lonely chicken
+
 
 
 ## Specifications
@@ -129,6 +130,7 @@ I follow a standard naming process for my opcode-subroutines. I prepend the name
 For labels inside subroutines, I prepend the subroutine label. For example, if I'm writing a loop inside MOVEROUTINE, I name the label for the loop MOVEROUTINE_LOOP. This allows me to avoid accidentally duplicating a label and moving the program control haphazardly.
 
 
+
 #### Git Rules
 
 For every feature, I make a branch. I name the branch with that feature.
@@ -136,6 +138,7 @@ For every feature, I make a branch. I name the branch with that feature.
 When I am finished implementing a feature, I make a merge request and review it one last time.
 
 Again, I follow the principles of test-driven development. I make tests. I ensure they fail. I make the tests pass, and I record the tests in merge requests.
+
 
 
 #### Op-Code Subroutines
@@ -379,6 +382,7 @@ SHIFTROUTINE:
 *Output: a6, a1, the value pointed to by a1
 ```
 
+
 ### Appendix
 
 #### TODO
@@ -388,6 +392,7 @@ SHIFTROUTINE:
 - Review BCC
 - Clean up the report.
 - Add table of Signatures
+
 
 
 #### Coding Problems 

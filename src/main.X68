@@ -1804,8 +1804,6 @@ SUBROUTINE_END:
 
 * End of SUBROUTINE subroutine
 
-*FIXME: I stopped reviwing right before move.
-
 MOVEROUTINE:
 *Description:
 *Loads "MOVE.", then the size and the effective addressing modes
@@ -1813,7 +1811,7 @@ MOVEROUTINE:
 *Requires a1 to point to buffer.
 *input: a6
 *Output: a6, a1, and the value pointed to by a1
-    movem.l     A0/A2-A5/D0-D7, -(sp)
+    movem.l     d7/d0-d4/a2, -(sp)
 
     * Check the validty of the source addressing mode first.
     jsr         IS_EA_VALID
@@ -1824,9 +1822,8 @@ MOVEROUTINE:
     move.w      d0,d1 * copy to d1
 
     *put the mode of the destination in d0.
-    lsl.w       #7,d0
-    lsr.w       #7,d0
     lsr.w       #6,d0
+    and.w       #7,d0
 
     *put the address of the destination in d1.
     lsl.w       #4,d1
@@ -1854,9 +1851,7 @@ MOVEROUTINE:
     cmp.b       #2,d1 * the first two modes are valid.
     blt         MOVEROUTINE_DESTINATION_VALID * abs short and abs long
 
-    cmp.b       #4,d1 * the immediate addressing mode is valid.
-    beq         MOVEROUTINE_DESTINATION_VALID
-
+    * the immediate addressing mode is valid.
     * Any other mode is invalid by this point.
     bra         MOVEROUTINE_DESTINATION_INVALID
 
@@ -1878,6 +1873,8 @@ MOVEROUTINE_DESTINATION_VALID:
     *After the jump table, the size should be set in d3.b
 MOVEROUTINE_AFTER_TABLE:
 
+    *The source is stored before the destination if both need extension words.
+
     *print a few spaces.
     move.b      #TAB,(a1)+
     move.b      #SPC,(a1)+
@@ -1892,6 +1889,7 @@ MOVEROUTINE_AFTER_TABLE:
     *d2.W is prepared
     *d3.b is prepared
     *a6 was incremented and is prepared.
+    *a1 points to the buffer.
     jsr         GET_EA
 
     *print a comma
@@ -1903,6 +1901,7 @@ MOVEROUTINE_AFTER_TABLE:
     *d2.W is prepared
     *d3.b is prepared
     *a6 was incremented and is prepared.
+    *a1 points to the buffer.
     jsr         GET_EA
 
     lea         LINE_END,a2
@@ -1943,9 +1942,8 @@ MOVEROUTINE_S_11: * word
 MOVEROUTINE_DESTINATION_INVALID:
     jsr         DATAROUTINE
 MOVEROUTINE_END:
-    movem.l     (sp)+,A0/A2-A5/D0-D7
+    movem.l     (sp)+,d7/d0-d4/a2
     rts
-
 * End of MOVEROUTINE subroutine
 
 MOVEMROUTINE:
@@ -1955,9 +1953,9 @@ MOVEMROUTINE:
 *Requires a1 to point to buffer.
 *input: a6
 *Output: a6, a1, and the value pointed to by a1
-    movem.l     A0/A2-A5/D0-D7, -(sp)
+    movem.l     a2/d7/d2,-(sp)
 
-    * Check the validty of the source addressing mode first.
+    * Check the validty of the EA first.
     jsr         IS_EA_VALID
     cmp.l       #-1,d7
     beq         MOVEMROUTINE_END
@@ -1965,7 +1963,7 @@ MOVEMROUTINE:
     move.w      (a6)+,d2 * store the op-code in d2.w
     move.w      (a6)+,d7 * store the register-list in d7.w
 
-    * Print "MOVE."
+    * Print "MOVEM."
     lea         MOVEM_OPCODE,a2
     jsr         COPY_STRING_A2_TO_A1
 
@@ -1982,7 +1980,7 @@ MOVEMROUTINE_LONG:
 
     *we got the size. Let's get the EA.
 MOVEMROUTINE_AFTER_SIZE:
-    *move.b      #SPC,(a1)+ *TODO: FIX the indentation later.
+    *move.b      #SPC,(a1)+
     *move.b      #SPC,(a1)+
     move.b      #TAB,(a1)+
 
@@ -2005,7 +2003,7 @@ MOVEMROUTINE_M_TO_R:
     move.b      #COMMA,(a1)+
 
     jsr         MOVEMROUTINE_GET_R
-    bra         MOVEMROUTINE_END_LINE
+    *move to MOVEMROUTINE_ENDLINE next.
 
 MOVEMROUTINE_END_LINE:
     lea         LINE_END,a2
@@ -2013,13 +2011,12 @@ MOVEMROUTINE_END_LINE:
     move.b      #0,(a1)+
     
 MOVEMROUTINE_END:
-    movem.l     (sp)+,A0/A2-A5/D0-D7
+    movem.l     (sp)+,a2/d7/d2
     rts
 
 * A subroutine to handle getting the register list.
 MOVEMROUTINE_GET_R:
-    movem.l     d2/d7/a6,-(sp) *FIXME: CONSIDER COPYING EVERYTHING USED.
-    * don't modify d2, d7, or a6
+    movem.l     d2/d7/d1,-(sp)
 
     *get the addressing mode.
     lsr.w       #3,d2
@@ -2100,7 +2097,7 @@ MOVEMROUTINE_GET_R_PRE_D_AFTER:
 
     *END the GET_R subroutine.
 MOVEMROUTINE_GET_R_END: 
-    movem.l     (sp)+,d2/d7/a6,
+    movem.l     (sp)+,d2/d7/d1
     rts
 
     *prints the data register number d2.b
@@ -2129,15 +2126,11 @@ MOVEMROUTINE_GET_R_SLASH_END:
 
 * A subroutine to handle printing the EA
 MOVEMROUTINE_GET_M:
-    * GET the size.
-    move.w      d2,d3
-    lsr.w       #6,d3
-    and.w       #1,d3
-    add.w       #1,d3
 
     *d2.W is prepared
-    *d3.b is prepared
+    *d3.b is not used because immediate addressing is not valid for MOVEM
     *a6 was incremented and is prepared.
+    *a1 points to the buffer.
     jsr         GET_EA
     rts
 
@@ -2148,21 +2141,18 @@ BCCROUTINE:
 *Description:
 *HANDLES BRA, BLT, BEQ, BGE
 *IF it is any other BCC, this subroutine calls the data routine.
-*TODO: Check with the professor if he wants us to print "UNKOWN BCC 0xdataaddress"
 *or just regulary print the data.
 *Requires a1 to point to buffer.
 *input: a6
-*Output: a6, the value pointed to by a1
-    movem.l     A0/A2-A5/D0-D7, -(sp)
-    *if needed, could optimize memory by only copying a2
+*Output: a6, a1, the value pointed to by a1
+    movem.l     d2/a2/d0, -(sp)
 
     move.l      #0,d0
     move.w      (a6),d0
 
     *GET the condition nibble
-    lsl.w       #4,d0 *get rid of the most significant nibble
-    lsr.w       #6,d0 *prepend with 12 zeros.
-    lsr.w       #6,d0
+    lsr.w       #8,d0
+    and.w       #$f,d0 *get rid of the most significant nibble
 
     *Checks for BRA
     cmp.b       #$00,d0
@@ -2170,25 +2160,25 @@ BCCROUTINE:
     lea         BRA_OPCODE,a2
     jsr         COPY_STRING_A2_TO_A1
     bra         BCCROUTINE_GET_ADDRESS
+BCCROUTINE_NOT_BRA:
 
-
-BCCROUTINE_NOT_BRA: *Checks for BLT
+    *Checks for BLT
     cmp.b       #$0D,d0
     bne         BCCROUTINE_NOT_BLT
     lea         BLT_OPCODE,a2
     jsr         COPY_STRING_A2_TO_A1
     bra         BCCROUTINE_GET_ADDRESS
+BCCROUTINE_NOT_BLT:
 
-
-BCCROUTINE_NOT_BLT: *Checks for BGE
+    *Checks for BGE
     cmp.b       #$0C,d0
     bne         BCCROUTINE_NOT_BGE
     lea         BGE_OPCODE,a2
     jsr         COPY_STRING_A2_TO_A1
     bra         BCCROUTINE_GET_ADDRESS
+BCCROUTINE_NOT_BGE:
 
-
-BCCROUTINE_NOT_BGE: *Checks for BEQ
+    *Checks for BEQ
     cmp.b       #$07,d0
     bne         BCCROUTINE_INVALID
     lea         BEQ_OPCODE,a2
@@ -2196,20 +2186,14 @@ BCCROUTINE_NOT_BGE: *Checks for BEQ
     bra         BCCROUTINE_GET_ADDRESS
 
 
-BCCROUTINE_INVALID:*TODO: Check with the professor what behavior he wants here exactly
+BCCROUTINE_INVALID:
     jsr         DATAROUTINE
     bra         BCCROUTINE_END
 
 
 BCCROUTINE_GET_ADDRESS:
-    *TODO: Does the PC point to the next insturction as the professor said?
-    *TODO: Or does it actually point to current instruction + 2. That would mean it points to data.
-    *TODO: This edge case will only be apparent if the difference is 16bits or 32bits.
-    *TODO: I must test those cases.
-    *TODO: I tested with Word. I can't test with long yet because this file is not long enough.
-    *TODO: The professor was wrong and the manual is right.
-    *TODO: It is the current instruction + 2 even if the next word is the displacement.
-    *TODO: For the sake of implementation, I will trust the professor's words for now.
+    *The destination is the current instruction + 2 + displacement
+    *even if the next word is the displacement and not an op-code.
 
     move.w      (a6),d0
 
@@ -2263,7 +2247,7 @@ BCCROUTINE_VALID_END:
     move.b      #0,(a1)+ * terminate with a null.
 
 BCCROUTINE_END:
-    movem.l     (sp)+,A0/A2-A5/D0-D7
+    movem.l     (sp)+,d2/a2/d0
     rts
 
 * End of BCCROUTINE subroutine
@@ -2272,8 +2256,8 @@ BCCROUTINE_END:
 *-----------------------------------------------------------
 * Put variables and constants here
 
-CR                  equ $0D *FIXME: be consistent. Either hex or decimal.
-LF                  equ $0A
+CR                  equ 13
+LF                  equ 10
 INITIAL_COUNT       equ 25
 SPC                 equ 32
 TAB                 equ 9
@@ -2348,9 +2332,6 @@ MOVE_OPCODE
 
 MOVEM_OPCODE
     dc.b    'MOVEM.',0
-
-IAM_STRING * FIXME: No longer needed. Consider deleting
-    dc.b    'IAM',0
 
 ERROR_STRING
     dc.b    'ERROR! ERROR! ERROR!',CR,LF,0

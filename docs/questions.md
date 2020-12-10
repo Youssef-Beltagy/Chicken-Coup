@@ -76,3 +76,5 @@ move fails with immediate data as the source.
 ```
 
 Test that the program doesn't exist with q1234567. But exists with just q.
+
+Try using a negative start that is actually higher with pos end which is lower.
