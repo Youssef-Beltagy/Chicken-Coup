@@ -381,22 +381,3 @@ SHIFTROUTINE:
 *input: a6, a2
 *Output: a6, a1, the value pointed to by a1
 ```
-
-
-### Appendix
-
-#### TODO
-
-- Review MOVE
-- Review MOVEM
-- Review BCC
-- Clean up the report.
-- Add table of Signatures
-
-
-
-#### Coding Problems 
-
- - LEA: Loads the memory location to an address register. It modifies an address register to point to a new location. Once I realized that, I made a COPY_STRING_A2_TO_A1 subroutine to copy strings into A1 without pointing A1 to new memory.
- - BRA: The address of the instruction is the address of bra + 2 + the difference. This was different from what we said in class.
- - Jmp: If you jmp to a line below the current line, jmp is three words. If you jmp to a line above the current line, jmp can be two words. This messes up with jmp tables.
