@@ -1,4 +1,4 @@
-EASy68K output log file: 12/9/2020 9:01:13 PM
+EASy68K output log file: 12/9/2020 9:47:25 PM
 
    ___ _     _      _                  ___                    _  
   / __\ |__ (_) ___| | _____ _ __     / __\___  _   _ _ __   / \ 
@@ -25,7 +25,7 @@ Please input your addresses as 8 hex-digits!
 The most significant byte must be $00.
 When the program pauses, press enter to continue or q to exit.
 
-Please enter the starting address (or q to exit): 00009000
+Please enter the starting address (or q to exit): 000090000
 Please enter the ending address: 00009fff
 00009000	BRA	    $0000940E
 00009004	MOVEM.W	(A1)+,D4/D5/D6/D7/A0/A1/A2/A3/A4/A5
@@ -1872,29 +1872,10 @@ Please enter the starting address (or q to exit):
 Invalid input: The input must be 8-digit hex number
 Please enter the starting address (or q to exit): 
 Invalid input: The input must be 8-digit hex number
-Please enter the starting address (or q to exit): sfda
-Invalid input: The input must be 8-digit hex number
-Please enter the starting address (or q to exit): asdfa
-Invalid input: The input must be 8-digit hex number
-Please enter the starting address (or q to exit): aba
-Invalid input: The input must be 8-digit hex number
-Please enter the starting address (or q to exit): a
-Invalid input: The input must be 8-digit hex number
-Please enter the starting address (or q to exit): a
-Invalid input: The input must be 8-digit hex number
 Please enter the starting address (or q to exit): 
 Invalid input: The input must be 8-digit hex number
 Please enter the starting address (or q to exit): 
 Invalid input: The input must be 8-digit hex number
-Please enter the starting address (or q to exit): 
-Invalid input: The input must be 8-digit hex number
-Please enter the starting address (or q to exit): a
-Invalid input: The input must be 8-digit hex number
-Please enter the starting address (or q to exit): qff0001000
-Invalid input: The most significant byte must be $00.
-Please enter the starting address (or q to exit): ff00--0044001000
-Please enter the ending address: f0001000
-Invalid input: The most significant byte must be $00.
 Please enter the starting address (or q to exit): 
 Invalid input: The input must be 8-digit hex number
 Please enter the starting address (or q to exit): 

@@ -1352,7 +1352,7 @@ NOTROUTINE:
 *If the EA is invalid, calls DATAROUTINE.
 *input: a6
 *Output: a6, a1, and the value pointed to by a1
-    movem.l     a2/d7/d2/d3, -(sp)
+    movem.l     a2/d7/d2, -(sp)
     *could optimize by not copying anything except a2, d7, d2, and d3
 
     jsr         IS_EA_VALID
@@ -1371,10 +1371,9 @@ NOTROUTINE:
 
     *prepare to call GET_EA
     move.w      (a6)+,d2
-    move.b      TEMP_VARIABLE,d3
 
     *d2.W is prepared
-    *d3.b is prepared
+    *d3.b is not needed because NOT doesn't allow immediate addressing modes.
     *a6 was incremented and is prepared.
     *a1 points to the buffer
     jsr         GET_EA    
@@ -1385,7 +1384,7 @@ NOTROUTINE:
     move.b      #0,(a1)+
 
 NOTROUTINE_END:
-    movem.l     (sp)+,a2/d7/d2/d3
+    movem.l     (sp)+,a2/d7/d2
     rts
 * End of NOTROUTINE subroutine
 
