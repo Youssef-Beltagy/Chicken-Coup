@@ -782,7 +782,7 @@ GET_LIGHT_PURPLE_SIZE:
 *Description:
 *Given an op-code at (a6) that uses
 * the light purple size in http://goldencrystal.free.fr/M68kOpcodes-v2.3.pdf.
-* This subroutine will print the approperiate size (B|W|L) in the value pointed to by a1.
+* This subroutine will print the appropriate size (B|W|L) in the value pointed to by a1.
 * If the input is Invalid, prints ERROR_STRING.
 * returns the size in TEMP_VARIABLE.b.
 *Input: a6
@@ -932,7 +932,7 @@ GET_EA: * Get the effective address.
 *If d3.b contains anything aside from [0,2] and the EA was immediate, ERROR_STRING will be printed.
 *Requires d2.w to contain the instruction.
 *Requires a1 to point to buffer.
-*Requires a6 to point to the next insturction or the memory of
+*Requires a6 to point to the next instruction or the memory of
 *the data of this EA.
 *Again, Requires a6 to point to the memory of the data of this EA or the
 *next instruction.
